@@ -3,7 +3,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:order/app/theme/theme_colors.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
-import 'package:get/get.dart';
+import '../../../shared/localization/app_translations.dart';
+import '../../../shared/utils/app_navigator.dart';
 import '../../../app/constants/api_endpoints.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../data/providers/api_provider.dart';
@@ -30,7 +31,7 @@ class _RateOrderViewState extends State<RateOrderView> {
   }
 
   Future<void> _loadOrderVendors() async {
-    final orderId = Get.arguments?['order_id']?.toString();
+    final orderId = AppNavigator.arguments?['order_id']?.toString();
     if (orderId == null || orderId.isEmpty || orderId == 'null') {
       setState(() => _isLoading = false);
       return;
@@ -53,7 +54,7 @@ class _RateOrderViewState extends State<RateOrderView> {
       final vendorId = v['vendor_id']?.toString() ?? '';
       if ((_ratings[vendorId] ?? 0) == 0) {
         final vendorName = v['name'] ?? '';
-        Get.snackbar(
+        AppNavigator.snackbar(
           ''.tr,
           '${'Please select a rating'.tr} - $vendorName',
           snackPosition: SnackPosition.BOTTOM,
@@ -65,9 +66,9 @@ class _RateOrderViewState extends State<RateOrderView> {
       }
     }
 
-    final orderId = Get.arguments?['order_id']?.toString();
+    final orderId = AppNavigator.arguments?['order_id']?.toString();
     if (orderId == null || orderId.isEmpty || orderId == 'null') {
-      Get.snackbar('Error'.tr, 'Order not found'.tr,
+      AppNavigator.snackbar('Error'.tr, 'Order not found'.tr,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: AppColors.error.withValues(alpha: 0.9),
           colorText: Colors.white,
@@ -97,17 +98,17 @@ class _RateOrderViewState extends State<RateOrderView> {
     setState(() => _isSubmitting = false);
     if (res.isNetworkError) return;
     if (res.success) {
-      Get.back();
-      if (Get.isSnackbarOpen) Get.closeCurrentSnackbar();
-      Get.snackbar('Success'.tr, 'Thank you for your feedback!'.tr,
+      AppNavigator.back();
+      if (AppNavigator.isSnackbarOpen) AppNavigator.closeCurrentSnackbar();
+      AppNavigator.snackbar('Success'.tr, 'Thank you for your feedback!'.tr,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: AppColors.success.withValues(alpha: 0.9),
           colorText: Colors.white,
           margin: const EdgeInsets.all(12));
     } else {
       if (kDebugMode) debugPrint('Rate order failed: ${res.message}');
-      if (Get.isSnackbarOpen) Get.closeCurrentSnackbar();
-      Get.snackbar('Error'.tr, (res.message ?? 'Something went wrong').tr,
+      if (AppNavigator.isSnackbarOpen) AppNavigator.closeCurrentSnackbar();
+      AppNavigator.snackbar('Error'.tr, (res.message ?? 'Something went wrong').tr,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: AppColors.error.withValues(alpha: 0.9),
           colorText: Colors.white,

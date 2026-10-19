@@ -1,19 +1,20 @@
-import 'package:get/get.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/constants/api_endpoints.dart';
 import '../../data/providers/api_provider.dart';
 
 /// Global favorites controller — manages favorite state across the entire app.
-/// Registered in MainShell so it persists across all tabs.
-class FavoritesController extends GetxController {
-  static FavoritesController get to => Get.find();
+class FavoritesController extends ChangeNotifier {
+  static FavoritesController? _instance;
+  static FavoritesController get to => _instance ??= FavoritesController();
 
-  final RxBool isLoading = false.obs;
-  final RxList<dynamic> favoriteVendors = <dynamic>[].obs;
-  final RxList<dynamic> favoriteItems = <dynamic>[].obs;
+  bool isLoading = false;
+  List<dynamic> favoriteVendors = [];
+  List<dynamic> favoriteItems = [];
 
   // In-memory sets for instant UI lookups (no API call needed)
-  final RxSet<String> _favVendorIds = <String>{}.obs;
-  final RxSet<String> _favItemIds = <String>{}.obs;
+  final Set<String> _favVendorIds = <String>{};
+  final Set<String> _favItemIds = <String>{};
 
   /// Check if a vendor is favorited
   bool isVendorFavorite(String vendorId) => _favVendorIds.contains(vendorId);
@@ -23,19 +24,20 @@ class FavoritesController extends GetxController {
 
   int get totalCount => favoriteVendors.length + favoriteItems.length;
 
-  @override
-  void onInit() {
-    super.onInit();
+  FavoritesController() {
+    _instance = this;
     loadFavorites();
   }
 
   /// Load all favorites from server
   Future<void> loadFavorites() async {
-    isLoading.value = true;
+    isLoading = true;
+    notifyListeners();
+
     final res = await ApiProvider.get(ApiEndpoints.favoritesGetAll);
     if (res.success && res.data != null) {
-      favoriteVendors.value = res.data['vendors'] ?? [];
-      favoriteItems.value = res.data['items'] ?? [];
+      favoriteVendors = res.data['vendors'] ?? [];
+      favoriteItems = res.data['items'] ?? [];
 
       // Rebuild ID sets
       _favVendorIds.clear();
@@ -47,7 +49,8 @@ class FavoritesController extends GetxController {
         _favItemIds.add(i['id'].toString());
       }
     }
-    isLoading.value = false;
+    isLoading = false;
+    notifyListeners();
   }
 
   /// Toggle favorite — instant UI update + API call
@@ -68,7 +71,7 @@ class FavoritesController extends GetxController {
         _favItemIds.add(targetId);
       }
     }
-    update(); // Notify GetBuilder listeners
+    notifyListeners();
 
     // API call
     final res = await ApiProvider.post(ApiEndpoints.favoritesToggle, body: {
@@ -91,10 +94,13 @@ class FavoritesController extends GetxController {
           _favItemIds.add(targetId);
         }
       }
-      update();
+      notifyListeners();
     } else {
       // Reload full data to get complete objects for newly added favorites
       loadFavorites();
     }
   }
 }
+
+final favoritesProvider = ChangeNotifierProvider<FavoritesController>(
+    (ref) => FavoritesController.to);

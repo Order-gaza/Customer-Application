@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:order/app/theme/theme_colors.dart';
-import 'package:get/get.dart';
+import '../../../shared/localization/app_translations.dart';
+import '../../../shared/utils/app_navigator.dart';
 import '../../../app/constants/api_endpoints.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../app/theme/app_colors.dart';
@@ -44,7 +45,7 @@ class _AddressListViewState extends State<AddressListView> {
     );
 
     if (res.success) {
-      Get.snackbar(
+      AppNavigator.snackbar(
         'Success'.tr,
         'Default address updated'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -58,8 +59,8 @@ class _AddressListViewState extends State<AddressListView> {
     } else if (!res.isNetworkError) {
       // Revert on failure
       _load();
-      if (Get.isSnackbarOpen) Get.closeCurrentSnackbar();
-      Get.snackbar(
+      if (AppNavigator.isSnackbarOpen) AppNavigator.closeCurrentSnackbar();
+      AppNavigator.snackbar(
         'Error'.tr,
         res.message ?? 'Something went wrong'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -71,7 +72,7 @@ class _AddressListViewState extends State<AddressListView> {
   }
 
   Future<void> _confirmDelete(String id) async {
-    final confirmed = await Get.dialog<bool>(
+    final confirmed = await AppNavigator.dialog<bool>(
       AlertDialog(
         backgroundColor: context.cx.card,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -83,11 +84,11 @@ class _AddressListViewState extends State<AddressListView> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Get.back(result: false),
+            onPressed: () => AppNavigator.back(result: false),
             child: Text('Cancel'.tr),
           ),
           TextButton(
-            onPressed: () => Get.back(result: true),
+            onPressed: () => AppNavigator.back(result: true),
             child: Text('Delete'.tr, style: const TextStyle(color: AppColors.error)),
           ),
         ],
@@ -101,7 +102,7 @@ class _AddressListViewState extends State<AddressListView> {
     );
     if (res.success) {
       _load();
-      Get.snackbar(
+      AppNavigator.snackbar(
         'Success'.tr,
         'Address deleted'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -114,7 +115,7 @@ class _AddressListViewState extends State<AddressListView> {
   }
 
   void _editAddress(dynamic address) async {
-    await Get.toNamed(AppRoutes.editAddress, arguments: {
+    await AppNavigator.toNamed(AppRoutes.editAddress, arguments: {
       'id': address['id'].toString(),
       'address_id': address['id'].toString(),
       'city': address['city'] ?? '',
@@ -131,7 +132,7 @@ class _AddressListViewState extends State<AddressListView> {
   void _showAddressDetails(dynamic a) {
     final isDefault = a['is_default'] == 1 || a['is_default'] == true;
 
-    Get.bottomSheet(
+    AppNavigator.bottomSheet(
       Container(
         padding: EdgeInsets.only(
           top: 16,
@@ -237,7 +238,7 @@ class _AddressListViewState extends State<AddressListView> {
                   Expanded(
                     child: OutlinedButton.icon(
                       onPressed: () {
-                        Get.back();
+                        AppNavigator.back();
                         _setDefault(a['id'].toString());
                       },
                       icon: const Icon(Icons.check_circle_outline_rounded, size: 18),
@@ -257,7 +258,7 @@ class _AddressListViewState extends State<AddressListView> {
                 Expanded(
                   child: ElevatedButton.icon(
                     onPressed: () {
-                      Get.back();
+                      AppNavigator.back();
                       _editAddress(a);
                     },
                     icon: const Icon(Icons.edit_rounded, size: 18),
@@ -278,7 +279,7 @@ class _AddressListViewState extends State<AddressListView> {
                   height: 46,
                   child: OutlinedButton(
                     onPressed: () {
-                      Get.back();
+                      AppNavigator.back();
                       _confirmDelete(a['id'].toString());
                     },
                     style: OutlinedButton.styleFrom(
@@ -339,7 +340,7 @@ class _AddressListViewState extends State<AddressListView> {
       appBar: AppBar(title: Text('My Addresses'.tr)),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
-          await Get.toNamed(AppRoutes.addAddress);
+          await AppNavigator.toNamed(AppRoutes.addAddress);
           _load();
         },
         child: const Icon(Icons.add),

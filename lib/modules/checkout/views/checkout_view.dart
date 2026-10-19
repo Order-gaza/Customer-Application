@@ -1,25 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order/app/theme/theme_colors.dart';
-import 'package:get/get.dart';
 import '../../../app/constants/api_endpoints.dart';
 import '../../../app/constants/app_constants.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../data/providers/api_provider.dart';
+import '../../../shared/localization/app_translations.dart';
 import '../../../shared/services/location_data.dart';
+import '../../../shared/utils/app_navigator.dart';
 import '../../cart/cart_controller.dart';
 
-class CheckoutView extends StatefulWidget {
+class CheckoutView extends ConsumerStatefulWidget {
   const CheckoutView({super.key});
   @override
-  State<CheckoutView> createState() => _CheckoutViewState();
+  ConsumerState<CheckoutView> createState() => _CheckoutViewState();
 }
 
-class _CheckoutViewState extends State<CheckoutView> {
+class _CheckoutViewState extends ConsumerState<CheckoutView> {
   List<dynamic> _addresses = [];
   String? _selectedAddressId;
   String _paymentMethod = 'cash_on_delivery';
   final _notesC = TextEditingController();
+  final _promoC = TextEditingController();
   bool _isLoading = false;
   bool _isPlacing = false;
 
@@ -27,6 +30,7 @@ class _CheckoutViewState extends State<CheckoutView> {
   void initState() {
     super.initState();
     _loadAddresses();
+    CartController.to.loadPointsBalance();
   }
 
   Future<void> _loadAddresses() async {
@@ -34,7 +38,9 @@ class _CheckoutViewState extends State<CheckoutView> {
     final res = await ApiProvider.get(ApiEndpoints.addressesGetAll);
     if (res.success) {
       _addresses = res.data?['addresses'] ?? [];
-      final def = _addresses.firstWhereOrNull((a) => a['is_default'] == 1 || a['is_default'] == true);
+      final def = _addresses
+          .where((a) => a['is_default'] == 1 || a['is_default'] == true)
+          .firstOrNull;
       if (def != null) {
         _selectedAddressId = def['id'].toString();
         CartController.to.loadDeliveryFee(_selectedAddressId!);
@@ -45,41 +51,59 @@ class _CheckoutViewState extends State<CheckoutView> {
 
   Future<void> _placeOrder() async {
     if (_selectedAddressId == null) {
-      Get.snackbar('Error'.tr, 'Please select a delivery address'.tr, snackPosition: SnackPosition.BOTTOM, backgroundColor: AppColors.error.withValues(alpha: 0.9), colorText: Colors.white, margin: const EdgeInsets.all(12));
+      AppNavigator.snackbar('Error'.tr, 'Please select a delivery address'.tr,
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: AppColors.error.withValues(alpha: 0.9),
+          colorText: Colors.white,
+          margin: const EdgeInsets.all(12));
       return;
     }
     setState(() => _isPlacing = true);
+    final cartC = ref.read(cartProvider);
     final res = await ApiProvider.post(ApiEndpoints.ordersCreate, body: {
       'address_id': _selectedAddressId!,
       'payment_method': _paymentMethod,
       if (_notesC.text.isNotEmpty) 'notes': _notesC.text,
+      if (cartC.promoCode.isNotEmpty) 'promo_code': cartC.promoCode,
+      if (cartC.usePoints) 'use_points': '1',
     });
     setState(() => _isPlacing = false);
     if (res.isNetworkError) return;
     if (res.success) {
-      CartController.to.loadCart();
-      Get.offNamed(AppRoutes.orderConfirmation, arguments: {
+      cartC.clearPromo();
+      cartC.togglePoints(false);
+      cartC.loadCart();
+      AppNavigator.offNamed(AppRoutes.orderConfirmation, arguments: {
         'order_id': res.data?['order_id'],
         'order_number': res.data?['order_number'],
         'total_amount': res.data?['total_amount'],
       });
     } else {
-      if (Get.isSnackbarOpen) Get.closeCurrentSnackbar();
-      Get.snackbar('Error'.tr, res.message ?? 'Something went wrong'.tr, snackPosition: SnackPosition.BOTTOM, backgroundColor: AppColors.error.withValues(alpha: 0.9), colorText: Colors.white, margin: const EdgeInsets.all(12));
+      if (AppNavigator.isSnackbarOpen) AppNavigator.closeCurrentSnackbar();
+      AppNavigator.snackbar('Error'.tr, res.message ?? 'Something went wrong'.tr,
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: AppColors.error.withValues(alpha: 0.9),
+          colorText: Colors.white,
+          margin: const EdgeInsets.all(12));
     }
   }
 
   @override
-  void dispose() { _notesC.dispose(); super.dispose(); }
+  void dispose() {
+    _notesC.dispose();
+    _promoC.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final cartC = CartController.to;
+    final cartC = ref.watch(cartProvider);
     return Scaffold(
       backgroundColor: context.cx.scaffold,
       appBar: AppBar(title: Text('Checkout'.tr)),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.primaryOrange))
+          ? const Center(
+              child: CircularProgressIndicator(color: AppColors.primaryOrange))
           : SingleChildScrollView(
               padding: const EdgeInsets.all(20),
               child: Column(
@@ -93,17 +117,21 @@ class _CheckoutViewState extends State<CheckoutView> {
                     ..._addresses.map((a) => _addressCard(a)),
                   TextButton.icon(
                     onPressed: () async {
-                      await Get.toNamed(AppRoutes.addAddress);
+                      await AppNavigator.toNamed(AppRoutes.addAddress);
                       _loadAddresses();
                     },
-                    icon: const Icon(Icons.add, color: AppColors.primaryOrange, size: 18),
-                    label: Text('Add New Address'.tr, style: const TextStyle(color: AppColors.primaryOrange)),
+                    icon: const Icon(Icons.add,
+                        color: AppColors.primaryOrange, size: 18),
+                    label: Text('Add New Address'.tr,
+                        style:
+                            const TextStyle(color: AppColors.primaryOrange)),
                   ),
                   const SizedBox(height: 20),
 
                   // Payment method
                   _sectionTitle('Payment Method'.tr),
-                  _paymentOption('cash_on_delivery', Icons.money_rounded, 'Cash on Delivery'.tr),
+                  _paymentOption('cash_on_delivery', Icons.money_rounded,
+                      'Cash on Delivery'.tr),
                   const SizedBox(height: 20),
 
                   // Notes
@@ -112,44 +140,207 @@ class _CheckoutViewState extends State<CheckoutView> {
                     controller: _notesC,
                     maxLines: 2,
                     style: TextStyle(color: context.cx.textPrimary),
-                    decoration: InputDecoration(hintText: 'Add a note for the rider...'.tr),
+                    decoration: InputDecoration(
+                        hintText: 'Add a note for the rider...'.tr),
                   ),
                   const SizedBox(height: 24),
 
+                  // Promo Code
+                  _sectionTitle('Promo Code'.tr),
+                  () {
+                    if (cartC.promoCode.isNotEmpty) {
+                      // Applied state
+                      return Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: AppColors.success.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                              color:
+                                  AppColors.success.withValues(alpha: 0.3)),
+                        ),
+                        child: Row(children: [
+                          const Icon(Icons.check_circle,
+                              color: AppColors.success, size: 20),
+                          const SizedBox(width: 10),
+                          Expanded(
+                              child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(cartC.promoCode,
+                                  style: const TextStyle(
+                                      color: AppColors.success,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                      letterSpacing: 1)),
+                              Text(
+                                  '${cartC.promoPercentage.toStringAsFixed(0)}% ${'off — saving'.tr} ${AppConstants.currency} ${cartC.promoDiscount.toStringAsFixed(2)}',
+                                  style: TextStyle(
+                                      color: context.cx.textSecondary,
+                                      fontSize: 12)),
+                            ],
+                          )),
+                          IconButton(
+                            icon: const Icon(Icons.close,
+                                color: AppColors.error, size: 18),
+                            onPressed: () => cartC.clearPromo(),
+                          ),
+                        ]),
+                      );
+                    }
+                    // Input state
+                    return Column(children: [
+                      Row(children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _promoC,
+                            textCapitalization: TextCapitalization.characters,
+                            style: TextStyle(
+                                color: context.cx.textPrimary,
+                                letterSpacing: 1),
+                            decoration: InputDecoration(
+                                hintText: 'Enter promo code'.tr,
+                                prefixIcon: const Icon(
+                                    Icons.confirmation_number_outlined)),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        ElevatedButton(
+                          onPressed: cartC.promoValidating
+                              ? null
+                              : () => cartC.validatePromo(_promoC.text),
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 14),
+                            minimumSize: const Size(64, 48),
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          child: cartC.promoValidating
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                      strokeWidth: 2, color: Colors.white))
+                              : Text('Apply'.tr),
+                        ),
+                      ]),
+                      if (cartC.promoError.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Text(cartC.promoError,
+                              style: const TextStyle(
+                                  color: AppColors.error, fontSize: 12)),
+                        ),
+                    ]);
+                  }(),
+                  const SizedBox(height: 20),
+
+                  // Points Redemption
+                  () {
+                    if (!cartC.pointsActive || cartC.pointsBalance <= 0) {
+                      return const SizedBox.shrink();
+                    }
+                    final shekelEquiv =
+                        (cartC.pointsBalance / cartC.pointsPerShekel).floor();
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _sectionTitle('Loyalty Points'.tr),
+                        Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: context.cx.card,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Column(children: [
+                            Row(children: [
+                              const Icon(Icons.stars,
+                                  color: AppColors.primaryOrange, size: 22),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                  child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                      '${cartC.pointsBalance} ${'points'.tr} (≈ ${AppConstants.currency} $shekelEquiv)',
+                                      style: TextStyle(
+                                          color: context.cx.textPrimary,
+                                          fontWeight: FontWeight.w600)),
+                                  if (cartC.usePoints &&
+                                      cartC.pointsDiscount > 0)
+                                    Text(
+                                        '${'Using'.tr} ${cartC.pointsToRedeem} ${'points'.tr} = ${AppConstants.currency} ${cartC.pointsDiscount.toStringAsFixed(2)} ${'off'.tr}',
+                                        style: const TextStyle(
+                                            color: AppColors.success,
+                                            fontSize: 12)),
+                                ],
+                              )),
+                              Switch(
+                                value: cartC.usePoints,
+                                activeThumbColor: AppColors.primaryOrange,
+                                onChanged: (val) => cartC.togglePoints(val),
+                              ),
+                            ]),
+                          ]),
+                        ),
+                        const SizedBox(height: 20),
+                      ],
+                    );
+                  }(),
+
                   // Summary
                   _sectionTitle('Order Summary'.tr),
-                  Obx(() => _summaryRow('Subtotal'.tr, cartC.subtotal.value)),
-                  Obx(() => _summaryRow('Delivery Fee'.tr, cartC.deliveryFee.value + cartC.serviceFee.value)),
+                  _summaryRow('Subtotal'.tr, cartC.subtotal),
+                  _summaryRow('Delivery Fee'.tr,
+                      cartC.deliveryFee + cartC.serviceFee),
                   // Zone route info
-                  Obx(() {
-                    if (cartC.zoneFrom.value.isNotEmpty && cartC.zoneTo.value.isNotEmpty) {
-                      final fromAr = LocationData.zoneKeyToArabic(cartC.zoneFrom.value);
-                      final toAr = LocationData.zoneKeyToArabic(cartC.zoneTo.value);
+                  () {
+                    if (cartC.zoneFrom.isNotEmpty &&
+                        cartC.zoneTo.isNotEmpty) {
+                      final fromAr =
+                          LocationData.zoneKeyToArabic(cartC.zoneFrom);
+                      final toAr =
+                          LocationData.zoneKeyToArabic(cartC.zoneTo);
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 8),
-                        child: Row(
-                          children: [
-                            Icon(Icons.route_rounded, size: 14, color: AppColors.info),
-                            const SizedBox(width: 6),
-                            Text(
-                              'التوصيل: $fromAr → $toAr',
-                              style: TextStyle(color: AppColors.info, fontSize: 12),
-                            ),
-                          ],
-                        ),
+                        child: Row(children: [
+                          const Icon(Icons.route_rounded,
+                              size: 14, color: AppColors.info),
+                          const SizedBox(width: 6),
+                          Text('التوصيل: $fromAr → $toAr',
+                              style: const TextStyle(
+                                  color: AppColors.info, fontSize: 12)),
+                        ]),
                       );
                     }
                     return const SizedBox.shrink();
-                  }),
-                  // Multi-vendor surcharge (only shown when ordering from 2+ vendors)
-                  Obx(() {
-                    if (cartC.multiVendorSurcharge.value > 0) {
-                      return _summaryRow('رسوم تعدد المتاجر'.tr, cartC.multiVendorSurcharge.value);
+                  }(),
+                  // Multi-vendor surcharge
+                  () {
+                    if (cartC.multiVendorSurcharge > 0) {
+                      return _summaryRow('رسوم تعدد المتاجر'.tr,
+                          cartC.multiVendorSurcharge);
                     }
                     return const SizedBox.shrink();
-                  }),
+                  }(),
+                  // Promo discount
+                  () {
+                    if (cartC.promoDiscount > 0) {
+                      return _discountRow(
+                          'Promo Discount'.tr, cartC.promoDiscount);
+                    }
+                    return const SizedBox.shrink();
+                  }(),
+                  // Points discount
+                  () {
+                    if (cartC.pointsDiscount > 0) {
+                      return _discountRow(
+                          'Points Discount'.tr, cartC.pointsDiscount);
+                    }
+                    return const SizedBox.shrink();
+                  }(),
                   Divider(color: context.cx.divider, height: 24),
-                  Obx(() => _summaryRow('Total'.tr, cartC.total, bold: true)),
+                  _summaryRow('Total'.tr, cartC.total, bold: true),
                   const SizedBox(height: 24),
 
                   // Place order
@@ -158,8 +349,13 @@ class _CheckoutViewState extends State<CheckoutView> {
                     child: ElevatedButton(
                       onPressed: _isPlacing ? null : _placeOrder,
                       child: _isPlacing
-                          ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                          : Text('Place Order'.tr, style: const TextStyle(fontSize: 16)),
+                          ? const SizedBox(
+                              width: 22,
+                              height: 22,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2, color: Colors.white))
+                          : Text('Place Order'.tr,
+                              style: const TextStyle(fontSize: 16)),
                     ),
                   ),
                 ],
@@ -170,7 +366,11 @@ class _CheckoutViewState extends State<CheckoutView> {
 
   Widget _sectionTitle(String t) => Padding(
         padding: const EdgeInsets.only(bottom: 12),
-        child: Text(t, style: TextStyle(color: context.cx.textPrimary, fontSize: 16, fontWeight: FontWeight.bold)),
+        child: Text(t,
+            style: TextStyle(
+                color: context.cx.textPrimary,
+                fontSize: 16,
+                fontWeight: FontWeight.bold)),
       );
 
   Widget _addressCard(dynamic a) {
@@ -187,30 +387,48 @@ class _CheckoutViewState extends State<CheckoutView> {
         decoration: BoxDecoration(
           color: context.cx.card,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: selected ? AppColors.primaryOrange : context.cx.divider, width: selected ? 2 : 0.5),
+          border: Border.all(
+              color: selected ? AppColors.primaryOrange : context.cx.divider,
+              width: selected ? 2 : 0.5),
         ),
         child: Row(
           children: [
-            Icon(selected ? Icons.radio_button_checked : Icons.radio_button_off, color: selected ? AppColors.primaryOrange : context.cx.textSecondary, size: 20),
+            Icon(selected ? Icons.radio_button_checked : Icons.radio_button_off,
+                color: selected
+                    ? AppColors.primaryOrange
+                    : context.cx.textSecondary,
+                size: 20),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(a['city'] != null && a['city'].toString().isNotEmpty
-                      ? '${a['neighborhood'] ?? ''}, ${a['city']}'
-                      : (a['label'] ?? ''),
-                      style: TextStyle(color: context.cx.textPrimary, fontWeight: FontWeight.w600)),
+                  Text(
+                      a['city'] != null && a['city'].toString().isNotEmpty
+                          ? '${a['neighborhood'] ?? ''}, ${a['city']}'
+                          : (a['label'] ?? ''),
+                      style: TextStyle(
+                          color: context.cx.textPrimary,
+                          fontWeight: FontWeight.w600)),
                   const SizedBox(height: 2),
-                  Text(a['address_line'] ?? '', style: TextStyle(color: context.cx.textSecondary, fontSize: 13), maxLines: 2),
+                  Text(a['address_line'] ?? '',
+                      style: TextStyle(
+                          color: context.cx.textSecondary, fontSize: 13),
+                      maxLines: 2),
                 ],
               ),
             ),
-            if (a['is_default'] == 1) Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(color: AppColors.primaryOrange.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(6)),
-              child: Text('Default'.tr, style: const TextStyle(color: AppColors.primaryOrange, fontSize: 10)),
-            ),
+            if (a['is_default'] == 1)
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                    color: AppColors.primaryOrange.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(6)),
+                child: Text('Default'.tr,
+                    style: const TextStyle(
+                        color: AppColors.primaryOrange, fontSize: 10)),
+              ),
           ],
         ),
       ),
@@ -219,8 +437,11 @@ class _CheckoutViewState extends State<CheckoutView> {
 
   Widget _emptyAddressCard() => Container(
         padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(color: context.cx.card, borderRadius: BorderRadius.circular(12)),
-        child: Center(child: Text('No addresses saved'.tr, style: TextStyle(color: context.cx.textSecondary))),
+        decoration: BoxDecoration(
+            color: context.cx.card, borderRadius: BorderRadius.circular(12)),
+        child: Center(
+            child: Text('No addresses saved'.tr,
+                style: TextStyle(color: context.cx.textSecondary))),
       );
 
   Widget _paymentOption(String value, IconData icon, String label) {
@@ -233,11 +454,17 @@ class _CheckoutViewState extends State<CheckoutView> {
         decoration: BoxDecoration(
           color: context.cx.card,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: selected ? AppColors.primaryOrange : context.cx.divider, width: selected ? 2 : 0.5),
+          border: Border.all(
+              color: selected ? AppColors.primaryOrange : context.cx.divider,
+              width: selected ? 2 : 0.5),
         ),
         child: Row(
           children: [
-            Icon(selected ? Icons.radio_button_checked : Icons.radio_button_off, color: selected ? AppColors.primaryOrange : context.cx.textSecondary, size: 20),
+            Icon(selected ? Icons.radio_button_checked : Icons.radio_button_off,
+                color: selected
+                    ? AppColors.primaryOrange
+                    : context.cx.textSecondary,
+                size: 20),
             const SizedBox(width: 12),
             Icon(icon, color: AppColors.primaryOrange, size: 22),
             const SizedBox(width: 10),
@@ -253,9 +480,32 @@ class _CheckoutViewState extends State<CheckoutView> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(label, style: TextStyle(color: bold ? context.cx.textPrimary : context.cx.textSecondary, fontWeight: bold ? FontWeight.bold : FontWeight.normal)),
+            Text(label,
+                style: TextStyle(
+                    color: bold
+                        ? context.cx.textPrimary
+                        : context.cx.textSecondary,
+                    fontWeight: bold ? FontWeight.bold : FontWeight.normal)),
             Text('${AppConstants.currency} ${value.toStringAsFixed(2)}',
-                style: TextStyle(color: bold ? AppColors.primaryOrange : context.cx.textPrimary, fontWeight: bold ? FontWeight.bold : FontWeight.w600, fontSize: bold ? 16 : 14)),
+                style: TextStyle(
+                    color: bold
+                        ? AppColors.primaryOrange
+                        : context.cx.textPrimary,
+                    fontWeight: bold ? FontWeight.bold : FontWeight.w600,
+                    fontSize: bold ? 16 : 14)),
+          ],
+        ),
+      );
+
+  Widget _discountRow(String label, double value) => Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(label, style: const TextStyle(color: AppColors.success)),
+            Text('- ${AppConstants.currency} ${value.toStringAsFixed(2)}',
+                style: const TextStyle(
+                    color: AppColors.success, fontWeight: FontWeight.w600)),
           ],
         ),
       );

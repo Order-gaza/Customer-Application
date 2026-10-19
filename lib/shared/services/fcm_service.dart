@@ -4,26 +4,30 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:get/get.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../shared/services/secure_storage_service.dart';
+import '../../shared/utils/app_navigator.dart';
 import '../../app/constants/api_endpoints.dart';
 import '../../data/providers/api_provider.dart';
+import '../../firebase_options.dart';
 
 /// Top-level background message handler (must be a top-level function)
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   if (kDebugMode) debugPrint('[FCM] Background message: ${message.messageId}');
 }
 
-class FcmService extends GetxService {
-  static FcmService get to => Get.find<FcmService>();
+class FcmService extends ChangeNotifier {
+  static FcmService? _instance;
+  static FcmService get to => _instance ??= FcmService();
 
   final FirebaseMessaging _messaging = FirebaseMessaging.instance;
   final FlutterLocalNotificationsPlugin _localNotifications =
       FlutterLocalNotificationsPlugin();
 
-  final unreadCount = 0.obs;
+  int _unreadCount = 0;
+  int get unreadCount => _unreadCount;
 
   /// Notification channel for Android
   static const AndroidNotificationChannel _channel = AndroidNotificationChannel(
@@ -38,6 +42,8 @@ class FcmService extends GetxService {
 
   /// Initialize FCM
   Future<FcmService> init() async {
+    _instance = this;
+
     // Create notification channel on Android
     await _localNotifications
         .resolvePlatformSpecificImplementation<
@@ -62,7 +68,9 @@ class FcmService extends GetxService {
       provisional: false,
     );
 
-    if (kDebugMode) debugPrint('[FCM] Permission status: ${settings.authorizationStatus}');
+    if (kDebugMode) {
+      debugPrint('[FCM] Permission status: ${settings.authorizationStatus}');
+    }
 
     if (settings.authorizationStatus == AuthorizationStatus.authorized ||
         settings.authorizationStatus == AuthorizationStatus.provisional) {
@@ -101,14 +109,16 @@ class FcmService extends GetxService {
     try {
       final res = await ApiProvider.get(ApiEndpoints.notificationsUnreadCount);
       if (res.success && res.data != null) {
-        unreadCount.value = res.data['unread_count'] ?? 0;
+        _unreadCount = res.data['unread_count'] ?? 0;
+        notifyListeners();
       }
     } catch (_) {}
   }
 
   /// Reset unread count (call when user opens notifications page)
   void resetUnreadCount() {
-    unreadCount.value = 0;
+    _unreadCount = 0;
+    notifyListeners();
   }
 
   /// Register FCM token with the backend
@@ -116,7 +126,9 @@ class FcmService extends GetxService {
     try {
       final authToken = SecureStorageService.instance.read('auth_token');
       if (authToken == null) {
-        if (kDebugMode) debugPrint('[FCM] No auth token found — skipping registration');
+        if (kDebugMode) {
+          debugPrint('[FCM] No auth token found — skipping registration');
+        }
         return;
       }
 
@@ -135,10 +147,11 @@ class FcmService extends GetxService {
 
   /// Handle foreground message — show local notification
   void _handleForegroundMessage(RemoteMessage message) {
-    if (kDebugMode) debugPrint('[FCM] Foreground message: ${message.notification?.title}');
+    if (kDebugMode) {
+      debugPrint('[FCM] Foreground message: ${message.notification?.title}');
+    }
 
     final notification = message.notification;
-    final android = notification?.android;
 
     if (notification != null) {
       _localNotifications.show(
@@ -161,17 +174,20 @@ class FcmService extends GetxService {
       );
 
       // Update unread count
-      unreadCount.value++;
+      _unreadCount++;
+      notifyListeners();
 
-      // Show in-app snackbar
-      if (Get.isSnackbarOpen == false) {
-        Get.snackbar(
+      // Show in-app banner
+      if (!AppNavigator.isSnackbarOpen) {
+        AppNavigator.snackbar(
           notification.title ?? 'Notification',
           notification.body ?? '',
           backgroundColor: const Color(0xFF1E1E2E),
           colorText: Colors.white,
-          icon: const Icon(Icons.notifications_active,
-              color: Color(0xFFFF6B35)),
+          icon: const Icon(
+            Icons.notifications_active,
+            color: Color(0xFFFF6B35),
+          ),
           duration: const Duration(seconds: 4),
           snackPosition: SnackPosition.TOP,
           margin: const EdgeInsets.all(12),
@@ -189,7 +205,9 @@ class FcmService extends GetxService {
 
   /// Handle local notification tap
   void _onNotificationTapped(NotificationResponse response) {
-    if (kDebugMode) debugPrint('[FCM] Local notification tapped: ${response.payload}');
+    if (kDebugMode) {
+      debugPrint('[FCM] Local notification tapped: ${response.payload}');
+    }
     if (response.payload != null) {
       try {
         final data = jsonDecode(response.payload!) as Map<String, dynamic>;
@@ -205,11 +223,13 @@ class FcmService extends GetxService {
     if (orderId != null && orderId.toString().isNotEmpty) {
       // Navigate to order tracking page
       try {
-        Get.toNamed('/order-tracking', arguments: {
+        AppNavigator.toNamed('/order-tracking', arguments: {
           'order_id': orderId.toString(),
         });
       } catch (_) {
-        if (kDebugMode) debugPrint('[FCM] Could not navigate to order tracking');
+        if (kDebugMode) {
+          debugPrint('[FCM] Could not navigate to order tracking');
+        }
       }
     }
   }
@@ -222,3 +242,5 @@ class FcmService extends GetxService {
     }
   }
 }
+
+final fcmProvider = ChangeNotifierProvider<FcmService>((ref) => FcmService.to);

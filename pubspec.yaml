@@ -1,7 +1,7 @@
 name: order
 description: "Order — Multi-vendor ordering app for customers"
 publish_to: 'none'
-version: 1.0.2+3
+version: 1.0.3+5
 
 environment:
   sdk: ^3.6.0
@@ -10,7 +10,7 @@ dependencies:
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.8
-  get: ^4.7.2
+  flutter_riverpod: ^2.6.1
   http: ^1.3.0
   get_storage: ^2.1.1
   intl: ^0.20.0
@@ -37,6 +37,11 @@ dev_dependencies:
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
+  web:
+    generate: true
+    image_path: "assets/launcher1.jpg"
+    background_color: "#ffffff"
+    theme_color: "#ffffff"
   image_path: "assets/launcher1.jpg"
   min_sdk_android: 21
 

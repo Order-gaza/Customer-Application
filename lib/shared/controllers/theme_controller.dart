@@ -1,26 +1,27 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get_storage/get_storage.dart';
 
-/// Global theme controller — manages dark/light mode with persistence.
-class ThemeController extends GetxController {
-  static ThemeController get to => Get.find();
+/// Global theme controller — manages dark/light mode with persistence and Riverpod reactivity.
+class ThemeController extends ChangeNotifier {
+  static ThemeController? _instance;
+  static ThemeController get to => _instance ??= ThemeController();
 
   static const String _storageKey = 'theme_mode';
   final _storage = GetStorage();
 
-  final Rx<ThemeMode> themeMode = ThemeMode.dark.obs;
+  ThemeMode _themeMode = ThemeMode.dark;
+  ThemeMode get themeMode => _themeMode;
 
-  bool get isDark => themeMode.value == ThemeMode.dark;
+  bool get isDark => _themeMode == ThemeMode.dark;
 
-  @override
-  void onInit() {
-    super.onInit();
+  ThemeController() {
+    _instance = this;
     final stored = _storage.read<String>(_storageKey);
     if (stored == 'light') {
-      themeMode.value = ThemeMode.light;
+      _themeMode = ThemeMode.light;
     } else {
-      themeMode.value = ThemeMode.dark;
+      _themeMode = ThemeMode.dark;
     }
   }
 
@@ -33,14 +34,17 @@ class ThemeController extends GetxController {
   }
 
   void setDark() {
-    themeMode.value = ThemeMode.dark;
-    Get.changeThemeMode(ThemeMode.dark);
+    _themeMode = ThemeMode.dark;
     _storage.write(_storageKey, 'dark');
+    notifyListeners();
   }
 
   void setLight() {
-    themeMode.value = ThemeMode.light;
-    Get.changeThemeMode(ThemeMode.light);
+    _themeMode = ThemeMode.light;
     _storage.write(_storageKey, 'light');
+    notifyListeners();
   }
 }
+
+final themeProvider =
+    ChangeNotifierProvider<ThemeController>((ref) => ThemeController.to);

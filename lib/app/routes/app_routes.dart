@@ -57,6 +57,7 @@ abstract class AppRoutes {
   static const String profile = '/profile';
   static const String editProfile = '/edit-profile';
   static const String changePassword = '/change-password';
+  static const String myPoints = '/my-points';
   static const String settings = '/settings';
   static const String aboutDeveloper = '/about-developer';
 }

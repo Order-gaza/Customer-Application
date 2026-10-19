@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:order/app/theme/theme_colors.dart';
-import 'package:get/get.dart';
+import '../../../shared/localization/app_translations.dart';
+import '../../../shared/utils/app_navigator.dart';
 import '../../../app/constants/api_endpoints.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../app/theme/app_colors.dart';
@@ -23,15 +24,15 @@ class _ChangePasswordViewState extends State<ChangePasswordView> {
 
   Future<void> _change() async {
     if (_currentC.text.isEmpty || _newC.text.isEmpty) {
-      Get.snackbar('Error'.tr, 'Both fields are required'.tr, snackPosition: SnackPosition.BOTTOM, backgroundColor: AppColors.error.withValues(alpha: 0.9), colorText: Colors.white, margin: const EdgeInsets.all(12));
+      AppNavigator.snackbar('Error'.tr, 'Both fields are required'.tr, snackPosition: SnackPosition.BOTTOM, backgroundColor: AppColors.error.withValues(alpha: 0.9), colorText: Colors.white, margin: const EdgeInsets.all(12));
       return;
     }
     if (_newC.text.length < 6) {
-      Get.snackbar('Error'.tr, 'Password must be at least 6 characters'.tr, snackPosition: SnackPosition.BOTTOM, backgroundColor: AppColors.error.withValues(alpha: 0.9), colorText: Colors.white, margin: const EdgeInsets.all(12));
+      AppNavigator.snackbar('Error'.tr, 'Password must be at least 6 characters'.tr, snackPosition: SnackPosition.BOTTOM, backgroundColor: AppColors.error.withValues(alpha: 0.9), colorText: Colors.white, margin: const EdgeInsets.all(12));
       return;
     }
     if (_newC.text != _confirmC.text) {
-      Get.snackbar('Error'.tr, 'Passwords do not match'.tr, snackPosition: SnackPosition.BOTTOM, backgroundColor: AppColors.error.withValues(alpha: 0.9), colorText: Colors.white, margin: const EdgeInsets.all(12));
+      AppNavigator.snackbar('Error'.tr, 'Passwords do not match'.tr, snackPosition: SnackPosition.BOTTOM, backgroundColor: AppColors.error.withValues(alpha: 0.9), colorText: Colors.white, margin: const EdgeInsets.all(12));
       return;
     }
     setState(() => _isSaving = true);
@@ -43,14 +44,14 @@ class _ChangePasswordViewState extends State<ChangePasswordView> {
     setState(() => _isSaving = false);
     if (res.isNetworkError) return;
     if (res.success) {
-      if (Get.isSnackbarOpen) Get.closeCurrentSnackbar();
-      Get.snackbar('Password Changed'.tr, 'Logging out for security. Please login with your new password.'.tr, snackPosition: SnackPosition.BOTTOM, backgroundColor: AppColors.success.withValues(alpha: 0.9), colorText: Colors.white, margin: const EdgeInsets.all(12), duration: const Duration(seconds: 3));
+      if (AppNavigator.isSnackbarOpen) AppNavigator.closeCurrentSnackbar();
+      AppNavigator.snackbar('Password Changed'.tr, 'Logging out for security. Please login with your new password.'.tr, snackPosition: SnackPosition.BOTTOM, backgroundColor: AppColors.success.withValues(alpha: 0.9), colorText: Colors.white, margin: const EdgeInsets.all(12), duration: const Duration(seconds: 3));
       await Future.delayed(const Duration(seconds: 2));
       ApiProvider.clearAuth();
-      Get.offAllNamed(AppRoutes.login);
+      AppNavigator.offAllNamed(AppRoutes.login);
     } else {
-      if (Get.isSnackbarOpen) Get.closeCurrentSnackbar();
-      Get.snackbar('Error'.tr, res.message ?? 'Change failed'.tr, snackPosition: SnackPosition.BOTTOM, backgroundColor: AppColors.error.withValues(alpha: 0.9), colorText: Colors.white, margin: const EdgeInsets.all(12));
+      if (AppNavigator.isSnackbarOpen) AppNavigator.closeCurrentSnackbar();
+      AppNavigator.snackbar('Error'.tr, res.message ?? 'Change failed'.tr, snackPosition: SnackPosition.BOTTOM, backgroundColor: AppColors.error.withValues(alpha: 0.9), colorText: Colors.white, margin: const EdgeInsets.all(12));
     }
   }
 

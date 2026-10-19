@@ -5,12 +5,12 @@ import 'app_colors.dart';
 /// Use `context.cx.scaffold`, `context.cx.card`, etc. instead of
 /// hardcoded AppColors.scaffoldDark / AppColors.cardDark.
 extension ThemeColorsExtension on BuildContext {
-  _Cx get cx => _Cx(Theme.of(this).brightness == Brightness.dark);
+ThemeCx get cx => ThemeCx(Theme.of(this).brightness == Brightness.dark);
 }
 
-class _Cx {
+class ThemeCx {
   final bool _dark;
-  const _Cx(this._dark);
+  const ThemeCx(this._dark);
 
   // ── Surfaces ──
   Color get scaffold => _dark ? AppColors.scaffoldDark : const Color(0xFFF8F8F8);

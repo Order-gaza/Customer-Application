@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:order/app/theme/theme_colors.dart';
-import 'package:get/get.dart';
+import '../../../shared/localization/app_translations.dart';
+import '../../../shared/utils/app_navigator.dart';
 import '../../../app/constants/api_endpoints.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../data/providers/api_provider.dart';
@@ -38,12 +39,12 @@ class _EditProfileViewState extends State<EditProfileView> {
     setState(() => _isSaving = false);
     if (res.isNetworkError) return;
     if (res.success) {
-      Get.back();
-      if (Get.isSnackbarOpen) Get.closeCurrentSnackbar();
-      Get.snackbar('Success'.tr, 'Profile updated'.tr, snackPosition: SnackPosition.BOTTOM, backgroundColor: AppColors.success.withValues(alpha: 0.9), colorText: Colors.white, margin: const EdgeInsets.all(12));
+      AppNavigator.back();
+      if (AppNavigator.isSnackbarOpen) AppNavigator.closeCurrentSnackbar();
+      AppNavigator.snackbar('Success'.tr, 'Profile updated'.tr, snackPosition: SnackPosition.BOTTOM, backgroundColor: AppColors.success.withValues(alpha: 0.9), colorText: Colors.white, margin: const EdgeInsets.all(12));
     } else {
-      if (Get.isSnackbarOpen) Get.closeCurrentSnackbar();
-      Get.snackbar('Error'.tr, res.message ?? 'Something went wrong'.tr, snackPosition: SnackPosition.BOTTOM, backgroundColor: AppColors.error.withValues(alpha: 0.9), colorText: Colors.white, margin: const EdgeInsets.all(12));
+      if (AppNavigator.isSnackbarOpen) AppNavigator.closeCurrentSnackbar();
+      AppNavigator.snackbar('Error'.tr, res.message ?? 'Something went wrong'.tr, snackPosition: SnackPosition.BOTTOM, backgroundColor: AppColors.error.withValues(alpha: 0.9), colorText: Colors.white, margin: const EdgeInsets.all(12));
     }
   }
 

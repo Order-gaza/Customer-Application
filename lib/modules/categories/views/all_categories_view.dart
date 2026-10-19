@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:order/app/theme/theme_colors.dart';
-import 'package:get/get.dart';
+import '../../../shared/localization/app_translations.dart';
+import '../../../shared/utils/app_navigator.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../../app/constants/api_endpoints.dart';
 import '../../../app/routes/app_routes.dart';
@@ -143,7 +144,7 @@ class _AllCategoriesViewState extends State<AllCategoriesView> {
   Widget _buildCategoryCard(
       BuildContext context, dynamic cat, List<Color> gradColors) {
     return GestureDetector(
-      onTap: () => Get.toNamed(AppRoutes.categoryItems, arguments: {
+      onTap: () => AppNavigator.toNamed(AppRoutes.categoryItems, arguments: {
         'category_id': cat['id'],
         'category_name': _catDisplayName(cat),
       }),

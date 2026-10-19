@@ -1,11 +1,19 @@
-import 'package:get/get.dart';
+import 'package:flutter/material.dart';
 
-class AppTranslations extends Translations {
-  @override
-  Map<String, Map<String, String>> get keys => {
-        'en': _en,
-        'ar': _ar,
-      };
+class AppTranslations {
+  static String currentLocaleCode = 'ar';
+  static Locale get currentLocale => Locale(currentLocaleCode);
+
+  static final Map<String, Map<String, String>> keys = {
+    'en': _en,
+    'ar': _ar,
+  };
+
+  static String translate(String key, [String? localeCode]) {
+    final code = localeCode ?? currentLocaleCode;
+    final dict = keys[code] ?? keys['ar'] ?? keys['en'] ?? {};
+    return dict[key] ?? keys['ar']?[key] ?? keys['en']?[key] ?? key;
+  }
 
   static const Map<String, String> _en = {
     // ── General ──
@@ -410,6 +418,27 @@ class AppTranslations extends Translations {
     'copied to clipboard': 'copied to clipboard',
     '© 2026 Order': '© 2026 Order',
     'OFF': 'OFF',
+    'Just now': 'Just now',
+    // ── Points ──
+    'My Points': 'My Points',
+    'points': 'points',
+    'History': 'History',
+    'No transactions yet': 'No transactions yet',
+    'Points earned': 'Points earned',
+    'Points redeemed': 'Points redeemed',
+    'Loyalty Points': 'Loyalty Points',
+    'Points Discount': 'Points Discount',
+    'Using': 'Using',
+    'off': 'off',
+    'off — saving': 'off — saving',
+    // ── Promo & Checkout ──
+    'Promo Code': 'Promo Code',
+    'Enter promo code': 'Enter promo code',
+    'Apply': 'Apply',
+    'Promo Discount': 'Promo Discount',
+    'Earned from order': 'Earned from order',
+    'Redeemed for order discount': 'Redeemed for order discount',
+    'Detailed Address': 'Detailed Address',
   };
 
   static const Map<String, String> _ar = {
@@ -815,5 +844,38 @@ class AppTranslations extends Translations {
     'copied to clipboard': 'تم النسخ إلى الحافظة',
     '© 2026 Order': '© 2026 أوردر',
     'OFF': 'خصم',
+    'Just now': 'الآن',
+    // ── النقاط ──
+    'My Points': 'نقاطي',
+    'points': 'نقاط',
+    'History': 'السجل',
+    'No transactions yet': 'لا توجد معاملات بعد',
+    'Points earned': 'نقاط مكتسبة',
+    'Points redeemed': 'نقاط مستبدلة',
+    'Loyalty Points': 'نقاط الولاء',
+    'Points Discount': 'خصم النقاط',
+    'Using': 'استخدام',
+    'off': 'خصم',
+    'off — saving': 'خصم — توفير',
+    // ── الكود والدفع ──
+    'Promo Code': 'كود الخصم',
+    'Enter promo code': 'أدخل كود الخصم',
+    'Apply': 'تطبيق',
+    'Promo Discount': 'خصم الكود',
+    'Earned from order': 'نقاط مكتسبة من طلب',
+    'Redeemed for order discount': 'تم استبدالها لخصم على طلب',
+    'Detailed Address': 'العنوان التفصيلي',
   };
+}
+
+extension AppStringTranslationExtension on String {
+  String get tr => AppTranslations.translate(this);
+
+  String trParams([Map<String, String> params = const {}]) {
+    var text = tr;
+    params.forEach((key, value) {
+      text = text.replaceAll('@$key', value);
+    });
+    return text;
+  }
 }

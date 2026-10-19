@@ -1,4 +1,4 @@
-import 'package:get/get.dart';
+import 'package:flutter/material.dart';
 import 'app_routes.dart';
 import '../../modules/splash/splash_view.dart';
 import '../../modules/onboarding/onboarding_view.dart';
@@ -26,61 +26,73 @@ import '../../modules/orders/views/rate_order_view.dart';
 import '../../modules/notifications/notifications_view.dart';
 import '../../modules/profile/views/edit_profile_view.dart';
 import '../../modules/profile/views/change_password_view.dart';
+import '../../modules/profile/views/points_view.dart';
 import '../../modules/settings/settings_view.dart';
-
 import '../../modules/settings/about_developer_view.dart';
 
 class AppPages {
-  static final pages = <GetPage>[
+  static final Map<String, WidgetBuilder> routes = {
     // ── Launch ──
-    GetPage(name: AppRoutes.splash, page: () => const SplashView()),
-    GetPage(name: AppRoutes.onboarding, page: () => const OnboardingView()),
+    AppRoutes.splash: (context) => const SplashView(),
+    AppRoutes.onboarding: (context) => const OnboardingView(),
 
     // ── Auth ──
-    GetPage(name: AppRoutes.login, page: () => const LoginView()),
-    GetPage(name: AppRoutes.signup, page: () => const SignupView()),
-    GetPage(name: AppRoutes.verifyEmail, page: () => const VerifyEmailView()),
-    GetPage(name: AppRoutes.forgotPassword, page: () => const ForgotPasswordView()),
-    GetPage(name: AppRoutes.verifyResetOtp, page: () => const VerifyResetOtpView()),
-    GetPage(name: AppRoutes.resetPassword, page: () => const ResetPasswordView()),
+    AppRoutes.login: (context) => const LoginView(),
+    AppRoutes.signup: (context) => const SignupView(),
+    AppRoutes.verifyEmail: (context) => const VerifyEmailView(),
+    AppRoutes.forgotPassword: (context) => const ForgotPasswordView(),
+    AppRoutes.verifyResetOtp: (context) => const VerifyResetOtpView(),
+    AppRoutes.resetPassword: (context) => const ResetPasswordView(),
 
     // ── Main Shell (Bottom Nav) ──
-    GetPage(name: AppRoutes.main, page: () => const MainShell()),
+    AppRoutes.main: (context) => const MainShell(),
 
     // ── Vendors ──
-    GetPage(name: AppRoutes.allVendors, page: () => const AllVendorsView()),
-    GetPage(name: AppRoutes.vendorDetail, page: () => const VendorDetailView()),
-    GetPage(name: AppRoutes.itemDetail, page: () => const ItemDetailView()),
+    AppRoutes.allVendors: (context) => const AllVendorsView(),
+    AppRoutes.vendorDetail: (context) => const VendorDetailView(),
+    AppRoutes.itemDetail: (context) => const ItemDetailView(),
 
     // ── Categories ──
-    GetPage(name: AppRoutes.allCategories, page: () => const AllCategoriesView()),
-    GetPage(name: AppRoutes.categoryItems, page: () => const CategoryItemsView()),
-    GetPage(name: AppRoutes.allItems, page: () => const AllItemsView()),
+    AppRoutes.allCategories: (context) => const AllCategoriesView(),
+    AppRoutes.categoryItems: (context) => const CategoryItemsView(),
+    AppRoutes.allItems: (context) => const AllItemsView(),
 
     // ── Search ──
-    GetPage(name: AppRoutes.search, page: () => const SearchView()),
+    AppRoutes.search: (context) => const SearchView(),
 
     // ── Checkout ──
-    GetPage(name: AppRoutes.checkout, page: () => const CheckoutView()),
-    GetPage(name: AppRoutes.orderConfirmation, page: () => const OrderConfirmationView()),
+    AppRoutes.checkout: (context) => const CheckoutView(),
+    AppRoutes.orderConfirmation: (context) => const OrderConfirmationView(),
 
     // ── Addresses ──
-    GetPage(name: AppRoutes.addresses, page: () => const AddressListView()),
-    GetPage(name: AppRoutes.addAddress, page: () => const AddAddressView()),
-    GetPage(name: AppRoutes.editAddress, page: () => const AddAddressView()),
+    AppRoutes.addresses: (context) => const AddressListView(),
+    AppRoutes.addAddress: (context) => const AddAddressView(),
+    AppRoutes.editAddress: (context) => const AddAddressView(),
 
     // ── Order Detail ──
-    GetPage(name: AppRoutes.orderDetail, page: () => const OrderDetailView()),
-    GetPage(name: AppRoutes.orderTracking, page: () => const OrderTrackingView()),
-    GetPage(name: AppRoutes.rateOrder, page: () => const RateOrderView()),
+    AppRoutes.orderDetail: (context) => const OrderDetailView(),
+    AppRoutes.orderTracking: (context) => const OrderTrackingView(),
+    AppRoutes.rateOrder: (context) => const RateOrderView(),
 
     // ── Notifications ──
-    GetPage(name: AppRoutes.notifications, page: () => const NotificationsView()),
+    AppRoutes.notifications: (context) => const NotificationsView(),
 
     // ── Profile ──
-    GetPage(name: AppRoutes.editProfile, page: () => const EditProfileView()),
-    GetPage(name: AppRoutes.changePassword, page: () => const ChangePasswordView()),
-    GetPage(name: AppRoutes.settings, page: () => const SettingsView()),
-    GetPage(name: AppRoutes.aboutDeveloper, page: () => const AboutDeveloperView()),
-  ];
+    AppRoutes.editProfile: (context) => const EditProfileView(),
+    AppRoutes.changePassword: (context) => const ChangePasswordView(),
+    AppRoutes.myPoints: (context) => const PointsView(),
+    AppRoutes.settings: (context) => const SettingsView(),
+    AppRoutes.aboutDeveloper: (context) => const AboutDeveloperView(),
+  };
+
+  static Route<dynamic>? onGenerateRoute(RouteSettings settings) {
+    final builder = routes[settings.name];
+    if (builder != null) {
+      return MaterialPageRoute(
+        builder: builder,
+        settings: settings,
+      );
+    }
+    return null;
+  }
 }

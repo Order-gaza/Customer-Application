@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:order/app/theme/theme_colors.dart';
-import 'package:get/get.dart';
+import '../../../shared/localization/app_translations.dart';
+import '../../../shared/utils/app_navigator.dart';
 import '../../../app/constants/app_constants.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../app/theme/app_colors.dart';
@@ -10,7 +11,7 @@ class OrderConfirmationView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final args = Get.arguments as Map<String, dynamic>? ?? {};
+    final args = AppNavigator.arguments as Map<String, dynamic>? ?? {};
     return Scaffold(
       backgroundColor: context.cx.scaffold,
       body: SafeArea(
@@ -48,7 +49,7 @@ class OrderConfirmationView extends StatelessWidget {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: () => Get.toNamed(AppRoutes.orderTracking, arguments: {'order_id': args['order_id']}),
+                    onPressed: () => AppNavigator.toNamed(AppRoutes.orderTracking, arguments: {'order_id': args['order_id']}),
                     child: Text('Track Order'.tr, style: const TextStyle(fontSize: 16)),
                   ),
                 ),
@@ -56,7 +57,7 @@ class OrderConfirmationView extends StatelessWidget {
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton(
-                    onPressed: () => Get.offAllNamed(AppRoutes.main),
+                    onPressed: () => AppNavigator.offAllNamed(AppRoutes.main),
                     child: Text('Back to Home'.tr, style: const TextStyle(fontSize: 16)),
                   ),
                 ),

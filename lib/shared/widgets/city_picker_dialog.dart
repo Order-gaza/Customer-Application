@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import '../../shared/localization/app_translations.dart';
+import '../utils/app_navigator.dart';
 import '../../app/theme/app_colors.dart';
 import '../../app/theme/theme_colors.dart';
 import '../services/location_data.dart';
@@ -21,7 +22,7 @@ class CityPickerDialog extends StatefulWidget {
     String? initialNeighborhood,
     bool mandatory = false,
   }) async {
-    return await Get.bottomSheet<Map<String, String>>(
+    return await AppNavigator.bottomSheet<Map<String, String>>(
       CityPickerDialog(
         initialCity: initialCity,
         initialNeighborhood: initialNeighborhood,
@@ -84,7 +85,7 @@ class _CityPickerDialogState extends State<CityPickerDialog>
 
   void _confirm() {
     if (_selectedCity != null && _selectedNeighborhood != null) {
-      Get.back(result: {
+      AppNavigator.back(result: {
         'city': _selectedCity!,
         'neighborhood': _selectedNeighborhood!,
       });

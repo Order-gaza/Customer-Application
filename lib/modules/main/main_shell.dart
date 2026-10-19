@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../shared/localization/app_translations.dart';
+import '../../shared/utils/app_navigator.dart';
 import '../../app/theme/app_colors.dart';
 import '../../app/theme/theme_colors.dart';
 import '../home/home_view.dart';
@@ -10,14 +12,14 @@ import '../profile/views/profile_view.dart';
 import '../cart/cart_controller.dart';
 import '../favorites/favorites_controller.dart';
 
-class MainShell extends StatefulWidget {
+class MainShell extends ConsumerStatefulWidget {
   const MainShell({super.key});
 
   @override
-  State<MainShell> createState() => _MainShellState();
+  ConsumerState<MainShell> createState() => _MainShellState();
 }
 
-class _MainShellState extends State<MainShell> {
+class _MainShellState extends ConsumerState<MainShell> {
   int _currentIndex = 0;
 
   final _pages = const [
@@ -31,10 +33,8 @@ class _MainShellState extends State<MainShell> {
   @override
   void initState() {
     super.initState();
-    Get.put(CartController());
-    Get.put(FavoritesController());
     // Support navigating directly to a specific tab (e.g. cart from snackbar)
-    final args = Get.arguments;
+    final args = AppNavigator.arguments;
     if (args is Map && args['tab'] is int) {
       _currentIndex = args['tab'];
     }
@@ -44,7 +44,7 @@ class _MainShellState extends State<MainShell> {
   Widget build(BuildContext context) {
     return PopScope(
       canPop: _currentIndex == 0,
-      onPopInvoked: (didPop) {
+      onPopInvokedWithResult: (didPop, result) {
         if (didPop) return;
         setState(() => _currentIndex = 0);
       },
@@ -148,27 +148,25 @@ class _MainShellState extends State<MainShell> {
 
   Widget _cartBadge(BuildContext context) {
     final isActive = _currentIndex == 3;
-    return Obx(() {
-      final count = CartController.to.cartItemCount.value;
-      return Badge(
-        isLabelVisible: count > 0,
-        label: Text('$count', style: const TextStyle(fontSize: 9, color: Colors.white)),
-        backgroundColor: AppColors.primaryOrange,
-        child: Icon(isActive ? Icons.shopping_cart_rounded : Icons.shopping_cart_outlined, color: isActive ? AppColors.primaryOrange : context.cx.textSecondary, size: 24),
-      );
-    });
+    final cart = ref.watch(cartProvider);
+    final count = cart.cartItemCount;
+    return Badge(
+      isLabelVisible: count > 0,
+      label: Text('$count', style: const TextStyle(fontSize: 9, color: Colors.white)),
+      backgroundColor: AppColors.primaryOrange,
+      child: Icon(isActive ? Icons.shopping_cart_rounded : Icons.shopping_cart_outlined, color: isActive ? AppColors.primaryOrange : context.cx.textSecondary, size: 24),
+    );
   }
 
   Widget _favBadge(BuildContext context) {
     final isActive = _currentIndex == 2;
-    return Obx(() {
-      final count = FavoritesController.to.totalCount;
-      return Badge(
-        isLabelVisible: count > 0,
-        label: Text('$count', style: const TextStyle(fontSize: 9, color: Colors.white)),
-        backgroundColor: AppColors.error,
-        child: Icon(isActive ? Icons.favorite_rounded : Icons.favorite_border_rounded, color: isActive ? AppColors.primaryOrange : context.cx.textSecondary, size: 24),
-      );
-    });
+    final fav = ref.watch(favoritesProvider);
+    final count = fav.totalCount;
+    return Badge(
+      isLabelVisible: count > 0,
+      label: Text('$count', style: const TextStyle(fontSize: 9, color: Colors.white)),
+      backgroundColor: AppColors.error,
+      child: Icon(isActive ? Icons.favorite_rounded : Icons.favorite_border_rounded, color: isActive ? AppColors.primaryOrange : context.cx.textSecondary, size: 24),
+    );
   }
 }

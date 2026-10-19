@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:order/app/theme/theme_colors.dart';
-import 'package:get/get.dart';
+import '../../shared/localization/app_translations.dart';
+import '../../shared/utils/app_navigator.dart';
 import 'package:get_storage/get_storage.dart';
 import '../../app/constants/app_constants.dart';
 import '../../app/routes/app_routes.dart';
@@ -52,7 +53,7 @@ class _SplashViewState extends State<SplashView>
     final onboardingSeen =
         storage.read<bool>(AppConstants.storageOnboardingSeen) ?? false;
     if (!onboardingSeen) {
-      Get.offAllNamed(AppRoutes.onboarding);
+      AppNavigator.offAllNamed(AppRoutes.onboarding);
       return;
     }
 
@@ -62,27 +63,25 @@ class _SplashViewState extends State<SplashView>
         final response = await ApiProvider.get(ApiEndpoints.validateSession);
         if (response.success) {
           // Re-register FCM token on auto-login
-          if (Get.isRegistered<FcmService>()) {
-            Get.find<FcmService>().refreshToken();
-          }
-          Get.offAllNamed(AppRoutes.main);
+          FcmService.to.refreshToken();
+          AppNavigator.offAllNamed(AppRoutes.main);
           return;
         }
         // If it's a network error, don't logout — proceed with cached credentials
         if (response.isNetworkError) {
-          Get.offAllNamed(AppRoutes.main);
+          AppNavigator.offAllNamed(AppRoutes.main);
           return;
         }
       } catch (_) {
         // Network exception — proceed to main with cached credentials
-        Get.offAllNamed(AppRoutes.main);
+        AppNavigator.offAllNamed(AppRoutes.main);
         return;
       }
       // Session explicitly rejected by server — clear & go to login
       ApiProvider.clearAuth();
     }
 
-    Get.offAllNamed(AppRoutes.login);
+    AppNavigator.offAllNamed(AppRoutes.login);
   }
 
   @override

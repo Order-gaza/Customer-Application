@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:order/app/theme/theme_colors.dart';
-import 'package:get/get.dart';
+import '../../shared/localization/app_translations.dart';
+import '../../shared/utils/app_navigator.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import '../../app/constants/app_constants.dart';
@@ -42,7 +43,7 @@ class _OnboardingViewState extends State<OnboardingView>
 
   void _onSkipOrFinish() {
     GetStorage().write(AppConstants.storageOnboardingSeen, true);
-    Get.offAllNamed(AppRoutes.login);
+    AppNavigator.offAllNamed(AppRoutes.login);
   }
 
   @override

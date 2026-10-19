@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:order/app/theme/theme_colors.dart';
-import 'package:get/get.dart';
+import '../../../shared/localization/app_translations.dart';
+import '../../../shared/utils/app_navigator.dart';
 import '../../../app/constants/api_endpoints.dart';
 import '../../../app/constants/app_constants.dart';
 import '../../../app/routes/app_routes.dart';
@@ -23,7 +24,7 @@ class _OrderDetailViewState extends State<OrderDetailView> {
   void initState() { super.initState(); _load(); }
 
   Future<void> _load() async {
-    final orderId = Get.arguments?['order_id'];
+    final orderId = AppNavigator.arguments?['order_id'];
     if (orderId == null) {
       setState(() => _isLoading = false);
       return;
@@ -86,6 +87,18 @@ class _OrderDetailViewState extends State<OrderDetailView> {
                           _priceRow('رسوم تعدد المتاجر'.tr, _order!['multi_vendor_surcharge']),
                         if (_order!['platform_fee'] != null && (double.tryParse(_order!['platform_fee']?.toString() ?? '0') ?? 0) > 0) 
                           _priceRow('Platform Fee'.tr, _order!['platform_fee']),
+                        if (_order!['promo_discount'] != null && (double.tryParse(_order!['promo_discount']?.toString() ?? '0') ?? 0) > 0)
+                          _discountRow('Promo Discount'.tr, _order!['promo_discount']),
+                        if (_order!['points_discount'] != null && (double.tryParse(_order!['points_discount']?.toString() ?? '0') ?? 0) > 0)
+                          _discountRow('Points Discount'.tr, _order!['points_discount']),
+                        if (_order!['points_earned'] != null && (int.tryParse(_order!['points_earned']?.toString() ?? '0') ?? 0) > 0)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 6),
+                            child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                              Text('Points Earned'.tr, style: const TextStyle(color: AppColors.success, fontSize: 13)),
+                              Text('+${_order!['points_earned']} ${'points'.tr}', style: const TextStyle(color: AppColors.success, fontWeight: FontWeight.w600, fontSize: 13)),
+                            ]),
+                          ),
                         Divider(color: context.cx.divider, height: 16),
                         _priceRow('Total'.tr, _order!['total_amount'], bold: true),
                       ])),
@@ -110,13 +123,9 @@ class _OrderDetailViewState extends State<OrderDetailView> {
                             if (_order!['status'] == 'pending') {
                               _cancelOrder();
                             } else {
-                              final isAr = Get.locale?.languageCode == 'ar';
-                              final textDir = isAr ? TextDirection.rtl : TextDirection.ltr;
-                              Get.snackbar(
+                              AppNavigator.snackbar(
                                 'Cannot Cancel'.tr,
                                 'This order has been confirmed and can no longer be cancelled. Please contact support for assistance.'.tr,
-                                titleText: Text('Cannot Cancel'.tr, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16), textAlign: isAr ? TextAlign.right : TextAlign.left, textDirection: textDir),
-                                messageText: Text('This order has been confirmed and can no longer be cancelled. Please contact support for assistance.'.tr, style: const TextStyle(color: Colors.white, fontSize: 14), textAlign: isAr ? TextAlign.right : TextAlign.left, textDirection: textDir),
                                 snackPosition: SnackPosition.BOTTOM,
                                 backgroundColor: AppColors.error.withValues(alpha: 0.9),
                                 colorText: Colors.white,
@@ -130,13 +139,13 @@ class _OrderDetailViewState extends State<OrderDetailView> {
                         )),
                       if (_order!['status'] == 'delivered') ...[
                         SizedBox(width: double.infinity, child: ElevatedButton(
-                          onPressed: () => Get.toNamed(AppRoutes.rateOrder, arguments: {'order_id': _order!['id']}),
+                          onPressed: () => AppNavigator.toNamed(AppRoutes.rateOrder, arguments: {'order_id': _order!['id']}),
                           child: Text('Rate Your Experience'.tr),
                         )),
                       ],
                       const SizedBox(height: 8),
                       SizedBox(width: double.infinity, child: TextButton(
-                        onPressed: () => Get.toNamed(AppRoutes.orderTracking, arguments: {'order_id': _order!['id']}),
+                        onPressed: () => AppNavigator.toNamed(AppRoutes.orderTracking, arguments: {'order_id': _order!['id']}),
                         child: Text('Track Order'.tr, style: const TextStyle(color: AppColors.primaryOrange)),
                       )),
                       const SizedBox(height: 24),
@@ -147,18 +156,18 @@ class _OrderDetailViewState extends State<OrderDetailView> {
   }
 
   Future<void> _cancelOrder() async {
-    final confirmed = await Get.dialog<bool>(AlertDialog(
+    final confirmed = await AppNavigator.dialog<bool>(AlertDialog(
       backgroundColor: context.cx.card,
       title: Text('Cancel order?'.tr, style: TextStyle(color: context.cx.textPrimary)),
       content: Text('Are you sure you want to cancel this order?'.tr, style: TextStyle(color: context.cx.textSecondary)),
       actions: [
-        TextButton(onPressed: () => Get.back(result: false), child: Text('No'.tr)),
-        TextButton(onPressed: () => Get.back(result: true), child: Text('Yes'.tr, style: const TextStyle(color: AppColors.error))),
+        TextButton(onPressed: () => AppNavigator.back(result: false), child: Text('No'.tr)),
+        TextButton(onPressed: () => AppNavigator.back(result: true), child: Text('Yes'.tr, style: const TextStyle(color: AppColors.error))),
       ],
     ));
     if (confirmed == true) {
       final res = await ApiProvider.post(ApiEndpoints.ordersCancel, body: {'order_id': _order!['id']});
-      if (res.success) { _load(); Get.snackbar('Success'.tr, 'Order cancelled'.tr, snackPosition: SnackPosition.BOTTOM, backgroundColor: AppColors.success.withValues(alpha: 0.9), colorText: Colors.white, margin: const EdgeInsets.all(12)); }
+      if (res.success) { _load(); AppNavigator.snackbar('Success'.tr, 'Order cancelled'.tr, snackPosition: SnackPosition.BOTTOM, backgroundColor: AppColors.success.withValues(alpha: 0.9), colorText: Colors.white, margin: const EdgeInsets.all(12)); }
     }
   }
 
@@ -177,6 +186,11 @@ class _OrderDetailViewState extends State<OrderDetailView> {
   Widget _priceRow(String l, dynamic v, {bool bold = false}) => Padding(padding: const EdgeInsets.only(bottom: 6), child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
         Text(l, style: TextStyle(color: bold ? context.cx.textPrimary : context.cx.textSecondary, fontWeight: bold ? FontWeight.bold : FontWeight.normal)),
         Text('${AppConstants.currency} ${v ?? '0'}', style: TextStyle(color: bold ? AppColors.primaryOrange : context.cx.textPrimary, fontWeight: bold ? FontWeight.bold : FontWeight.w500)),
+      ]));
+
+  Widget _discountRow(String l, dynamic v) => Padding(padding: const EdgeInsets.only(bottom: 6), child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+        Text(l, style: const TextStyle(color: AppColors.success)),
+        Text('- ${AppConstants.currency} ${v ?? '0'}', style: const TextStyle(color: AppColors.success, fontWeight: FontWeight.w600)),
       ]));
 
   Widget _historyRow(dynamic h) => Padding(padding: const EdgeInsets.only(bottom: 8), child: Row(children: [

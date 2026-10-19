@@ -1,7 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:order/app/theme/theme_colors.dart';
-import 'package:get/get.dart';
+import '../../../shared/localization/app_translations.dart';
+import '../../../shared/utils/app_navigator.dart';
 import '../../../app/constants/api_endpoints.dart';
 import '../../../app/constants/app_constants.dart';
 import '../../../app/theme/app_colors.dart';
@@ -25,7 +26,7 @@ class _OrderTrackingViewState extends State<OrderTrackingView> {
   }
 
   Future<void> _load() async {
-    final orderId = Get.arguments?['order_id'];
+    final orderId = AppNavigator.arguments?['order_id'];
     if (orderId == null) {
       setState(() => _isLoading = false);
       return;
@@ -55,7 +56,8 @@ class _OrderTrackingViewState extends State<OrderTrackingView> {
       backgroundColor: context.cx.scaffold,
       appBar: AppBar(title: Text('Order Tracking'.tr)),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.primaryOrange))
+          ? const Center(
+              child: CircularProgressIndicator(color: AppColors.primaryOrange))
           : _data == null
               ? _buildError(context)
               : _buildContent(context),
@@ -70,7 +72,8 @@ class _OrderTrackingViewState extends State<OrderTrackingView> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.error_outline_rounded, size: 60, color: context.cx.textHint),
+            Icon(Icons.error_outline_rounded,
+                size: 60, color: context.cx.textHint),
             const SizedBox(height: 12),
             Text(
               'Could not load tracking info'.tr,
@@ -99,7 +102,8 @@ class _OrderTrackingViewState extends State<OrderTrackingView> {
   // ── Main content ─────────────────────────────────────────
   Widget _buildContent(BuildContext context) {
     final isCancelled = _data!['is_cancelled'] == true;
-    final steps = (_data!['steps'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+    final steps =
+        (_data!['steps'] as List?)?.cast<Map<String, dynamic>>() ?? [];
 
     return RefreshIndicator(
       color: AppColors.primaryOrange,
@@ -139,16 +143,20 @@ class _OrderTrackingViewState extends State<OrderTrackingView> {
                 decoration: BoxDecoration(
                   color: AppColors.error.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
+                  border:
+                      Border.all(color: AppColors.error.withValues(alpha: 0.3)),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.cancel_rounded, color: AppColors.error, size: 24),
+                    const Icon(Icons.cancel_rounded,
+                        color: AppColors.error, size: 24),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         'This order has been cancelled'.tr,
-                        style: const TextStyle(color: AppColors.error, fontWeight: FontWeight.w600),
+                        style: const TextStyle(
+                            color: AppColors.error,
+                            fontWeight: FontWeight.w600),
                       ),
                     ),
                   ],
@@ -173,9 +181,9 @@ class _OrderTrackingViewState extends State<OrderTrackingView> {
   // ── Timeline step ─────────────────────────────────────────
   Widget _buildStep(BuildContext context, Map<String, dynamic> step) {
     final completed = step['completed'] == true;
-    final current   = step['current'] == true;
-    final label     = step['label']?.toString().tr
-        ?? AppConstants.orderStatusLabel(step['status'] ?? '');
+    final current = step['current'] == true;
+    final label = step['label']?.toString().tr ??
+        AppConstants.orderStatusLabel(step['status'] ?? '');
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -204,7 +212,11 @@ class _OrderTrackingViewState extends State<OrderTrackingView> {
                   ? const Icon(Icons.check, color: Colors.white, size: 16)
                   : null,
             ),
-            Container(width: 2, height: 40, color: completed ? AppColors.primaryOrange : context.cx.divider),
+            Container(
+                width: 2,
+                height: 40,
+                color:
+                    completed ? AppColors.primaryOrange : context.cx.divider),
           ],
         ),
         const SizedBox(width: 14),
@@ -221,8 +233,7 @@ class _OrderTrackingViewState extends State<OrderTrackingView> {
                     color: completed || current
                         ? context.cx.textPrimary
                         : context.cx.textSecondary,
-                    fontWeight:
-                        current ? FontWeight.bold : FontWeight.normal,
+                    fontWeight: current ? FontWeight.bold : FontWeight.normal,
                     fontSize: 15,
                   ),
                 ),
@@ -298,10 +309,12 @@ class _OrderTrackingViewState extends State<OrderTrackingView> {
               backgroundColor: AppColors.primaryOrange,
               foregroundColor: Colors.white,
               elevation: 0,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
             ),
             child: Text('Contact Us'.tr,
-                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                style:
+                    const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -310,7 +323,7 @@ class _OrderTrackingViewState extends State<OrderTrackingView> {
 
   // ── Support bottom sheet ──────────────────────────────────
   void _showSupportOptions(BuildContext context) {
-    Get.bottomSheet(
+    AppNavigator.bottomSheet(
       Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
@@ -330,7 +343,7 @@ class _OrderTrackingViewState extends State<OrderTrackingView> {
                         fontSize: 20,
                         fontWeight: FontWeight.bold)),
                 IconButton(
-                    onPressed: () => Get.back(),
+                    onPressed: () => AppNavigator.back(),
                     icon: Icon(Icons.close_rounded,
                         color: context.cx.textSecondary)),
               ],
@@ -340,10 +353,10 @@ class _OrderTrackingViewState extends State<OrderTrackingView> {
               context,
               icon: Icons.phone_in_talk_rounded,
               title: 'Call Support'.tr,
-              subtitle: '+01003640081',
+              subtitle: '+970599261116',
               onTap: () async {
-                Get.back();
-                final uri = Uri.parse('tel:+201003640081');
+                AppNavigator.back();
+                final uri = Uri.parse('tel:+970599261116');
                 if (await canLaunchUrl(uri)) launchUrl(uri);
               },
             ),
@@ -354,10 +367,10 @@ class _OrderTrackingViewState extends State<OrderTrackingView> {
               title: 'WhatsApp'.tr,
               subtitle: 'Send us a message'.tr,
               onTap: () async {
-                Get.back();
+                AppNavigator.back();
                 final msg = 'مرحباً، طلبي متأخر أو أحتاج إلى مساعدة';
                 final uri = Uri.parse(
-                    'https://wa.me/201003640081?text=${Uri.encodeComponent(msg)}');
+                    'https://wa.me/+970599261116?text=${Uri.encodeComponent(msg)}');
                 if (await canLaunchUrl(uri)) {
                   launchUrl(uri, mode: LaunchMode.externalApplication);
                 }
@@ -391,8 +404,7 @@ class _OrderTrackingViewState extends State<OrderTrackingView> {
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
                   color: context.cx.surface, shape: BoxShape.circle),
-              child:
-                  Icon(icon, color: AppColors.primaryOrange, size: 22),
+              child: Icon(icon, color: AppColors.primaryOrange, size: 22),
             ),
             const SizedBox(width: 14),
             Expanded(

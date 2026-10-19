@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:order/app/theme/theme_colors.dart';
-import 'package:get/get.dart';
+import '../../shared/localization/app_translations.dart';
+import '../../shared/utils/app_navigator.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../app/constants/api_endpoints.dart';
@@ -303,7 +304,7 @@ class _AllItemsViewState extends State<AllItemsView> {
         : 0;
 
     return GestureDetector(
-      onTap: () => Get.toNamed(AppRoutes.itemDetail,
+      onTap: () => AppNavigator.toNamed(AppRoutes.itemDetail,
           arguments: {'item_id': item['id']}),
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),

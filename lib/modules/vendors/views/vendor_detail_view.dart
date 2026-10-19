@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:order/app/theme/theme_colors.dart';
-import 'package:get/get.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../shared/localization/app_translations.dart';
+import '../../../shared/utils/app_navigator.dart';
+import '../../favorites/favorites_controller.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../../app/constants/api_endpoints.dart';
@@ -10,7 +13,6 @@ import '../../../app/theme/app_colors.dart';
 import '../../../data/providers/api_provider.dart';
 import '../../../shared/controllers/language_controller.dart';
 import '../../cart/cart_controller.dart';
-import '../../favorites/favorites_controller.dart';
 
 class VendorDetailView extends StatefulWidget {
   const VendorDetailView({super.key});
@@ -51,7 +53,7 @@ class _VendorDetailViewState extends State<VendorDetailView>
   }
 
   Future<void> _loadVendor() async {
-    final vendorId = Get.arguments?['vendor_id'];
+    final vendorId = AppNavigator.arguments?['vendor_id'];
     if (vendorId == null) return;
 
     final results = await Future.wait([
@@ -130,11 +132,12 @@ class _VendorDetailViewState extends State<VendorDetailView>
             iconTheme: IconThemeData(color: context.cx.iconDefault),
             elevation: 0,
             actions: [
-              Obx(() {
+              Consumer(builder: (context, ref, _) {
+                final fav = ref.watch(favoritesProvider);
                 final vendorId = _vendor!['id'].toString();
-                final isFav = FavoritesController.to.isVendorFavorite(vendorId);
+                final isFav = fav.isVendorFavorite(vendorId);
                 return IconButton(
-                  onPressed: () => FavoritesController.to.toggleFavorite('vendor', vendorId),
+                  onPressed: () => fav.toggleFavorite('vendor', vendorId),
                   icon: AnimatedSwitcher(
                     duration: const Duration(milliseconds: 250),
                     transitionBuilder: (child, anim) => ScaleTransition(scale: anim, child: child),
@@ -431,7 +434,7 @@ class _VendorDetailViewState extends State<VendorDetailView>
     final displayPrice = hasDiscount ? discountPrice.toString() : basePrice.toString();
 
     return GestureDetector(
-      onTap: () => Get.toNamed(AppRoutes.itemDetail,
+      onTap: () => AppNavigator.toNamed(AppRoutes.itemDetail,
           arguments: {'item_id': item['id']}),
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
@@ -534,8 +537,8 @@ class _VendorDetailViewState extends State<VendorDetailView>
                             onTap: () {
                               CartController.to
                                   .addToCart(item['id'].toString());
-                              if (Get.isSnackbarOpen) Get.closeCurrentSnackbar();
-                              Get.snackbar(
+                              if (AppNavigator.isSnackbarOpen) AppNavigator.closeCurrentSnackbar();
+                              AppNavigator.snackbar(
                                 'Added to Cart'.tr,
                                 '',
                                 snackPosition: SnackPosition.BOTTOM,
@@ -546,17 +549,6 @@ class _VendorDetailViewState extends State<VendorDetailView>
                                 duration: const Duration(seconds: 3),
                                 icon: const Icon(Icons.check_circle,
                                     color: Colors.white),
-                                mainButton: TextButton(
-                                  onPressed: () {
-                                    if (Get.isSnackbarOpen) Get.closeCurrentSnackbar();
-                                    Get.offAllNamed(AppRoutes.main, arguments: {'tab': 3});
-                                  },
-                                  child: Text('View Cart'.tr,
-                                      style: const TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 14)),
-                                ),
                               );
                             },
                             child: Container(
@@ -594,8 +586,8 @@ class _VendorDetailViewState extends State<VendorDetailView>
                         else if (available && !isOpen)
                           GestureDetector(
                             onTap: () {
-                              if (Get.isSnackbarOpen) Get.closeCurrentSnackbar();
-                              Get.snackbar(
+                              if (AppNavigator.isSnackbarOpen) AppNavigator.closeCurrentSnackbar();
+                              AppNavigator.snackbar(
                                 'Vendor Closed'.tr,
                                 'This vendor is currently closed. You cannot add items now.'.tr,
                                 snackPosition: SnackPosition.BOTTOM,
@@ -816,6 +808,12 @@ class _VendorDetailViewState extends State<VendorDetailView>
             'Address'.tr,
             _vendor!['address'] ?? '-',
           ),
+          if ((_vendor!['detailed_address'] ?? '').toString().isNotEmpty)
+            _infoCard(
+              Icons.edit_location_alt_outlined,
+              'Detailed Address'.tr,
+              _vendor!['detailed_address'],
+            ),
           _infoCard(
             Icons.phone_outlined,
             'Phone'.tr,

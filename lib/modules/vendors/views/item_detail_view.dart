@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:order/app/theme/theme_colors.dart';
-import 'package:get/get.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../shared/localization/app_translations.dart';
+import '../../../shared/utils/app_navigator.dart';
+import '../../favorites/favorites_controller.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../app/constants/api_endpoints.dart';
 import '../../../app/constants/app_constants.dart';
@@ -9,7 +12,6 @@ import '../../../app/theme/app_colors.dart';
 import '../../../data/providers/api_provider.dart';
 import '../../../shared/controllers/language_controller.dart';
 import '../../cart/cart_controller.dart';
-import '../../favorites/favorites_controller.dart';
 
 class ItemDetailView extends StatefulWidget {
   const ItemDetailView({super.key});
@@ -46,7 +48,7 @@ class _ItemDetailViewState extends State<ItemDetailView> {
   }
 
   Future<void> _loadItem() async {
-    final itemId = Get.arguments?['item_id'];
+    final itemId = AppNavigator.arguments?['item_id'];
     if (itemId == null) return;
 
     final res = await ApiProvider.get(ApiEndpoints.itemsGetById,
@@ -65,8 +67,8 @@ class _ItemDetailViewState extends State<ItemDetailView> {
         _item!['is_currently_open'] == true ||
         _item!['is_currently_open'] == '1';
     if (!vendorOpen) {
-      if (Get.isSnackbarOpen) Get.closeCurrentSnackbar();
-      Get.snackbar(
+      if (AppNavigator.isSnackbarOpen) AppNavigator.closeCurrentSnackbar();
+      AppNavigator.snackbar(
         'Vendor Closed'.tr,
         'This vendor is currently closed. You cannot add items now.'.tr,
         snackPosition: SnackPosition.BOTTOM,
@@ -79,8 +81,8 @@ class _ItemDetailViewState extends State<ItemDetailView> {
       return;
     }
     CartController.to.addToCart(_item!['id'].toString(), quantity: _quantity);
-    if (Get.isSnackbarOpen) Get.closeCurrentSnackbar();
-    Get.snackbar(
+    if (AppNavigator.isSnackbarOpen) AppNavigator.closeCurrentSnackbar();
+    AppNavigator.snackbar(
       'Added to Cart'.tr,
       '',
       snackPosition: SnackPosition.BOTTOM,
@@ -89,23 +91,6 @@ class _ItemDetailViewState extends State<ItemDetailView> {
       margin: const EdgeInsets.all(12),
       duration: const Duration(seconds: 3),
       icon: const Icon(Icons.check_circle, color: Colors.white),
-      mainButton: TextButton(
-        onPressed: () {
-          if (Get.isSnackbarOpen) Get.closeCurrentSnackbar();
-          // Navigate to MainShell with cart tab index 3
-          Get.until((route) => route.isFirst);
-          final shell = Get.context;
-          if (shell != null) {
-            // Use Get offAll to go to main and set cart tab
-            Get.offAllNamed(AppRoutes.main, arguments: {'tab': 3});
-          }
-        },
-        child: Text('View Cart'.tr,
-            style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 14)),
-      ),
     );
   }
 
@@ -163,11 +148,12 @@ class _ItemDetailViewState extends State<ItemDetailView> {
             backgroundColor: context.cx.appBar,
             iconTheme: IconThemeData(color: context.cx.iconDefault),
             actions: [
-              Obx(() {
+              Consumer(builder: (context, ref, _) {
+                final fav = ref.watch(favoritesProvider);
                 final itemId = _item!['id'].toString();
-                final isFav = FavoritesController.to.isItemFavorite(itemId);
+                final isFav = fav.isItemFavorite(itemId);
                 return IconButton(
-                  onPressed: () => FavoritesController.to.toggleFavorite('item', itemId),
+                  onPressed: () => fav.toggleFavorite('item', itemId),
                   icon: AnimatedSwitcher(
                     duration: const Duration(milliseconds: 250),
                     transitionBuilder: (child, anim) => ScaleTransition(scale: anim, child: child),
@@ -349,7 +335,7 @@ class _ItemDetailViewState extends State<ItemDetailView> {
 
                   // Vendor info
                   GestureDetector(
-                    onTap: () => Get.toNamed(AppRoutes.vendorDetail,
+                    onTap: () => AppNavigator.toNamed(AppRoutes.vendorDetail,
                         arguments: {
                           'vendor_id': _item!['vendor_id']
                         }),

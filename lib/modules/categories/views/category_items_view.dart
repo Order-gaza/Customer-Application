@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:order/app/theme/theme_colors.dart';
-import 'package:get/get.dart';
+import '../../../shared/localization/app_translations.dart';
+import '../../../shared/utils/app_navigator.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../../app/constants/api_endpoints.dart';
@@ -55,7 +56,7 @@ class _CategoryItemsViewState extends State<CategoryItemsView>
   }
 
   Future<void> _load() async {
-    final categoryId = Get.arguments?['category_id'];
+    final categoryId = AppNavigator.arguments?['category_id'];
     if (categoryId == null) return;
 
     final res = await ApiProvider.get(
@@ -73,7 +74,7 @@ class _CategoryItemsViewState extends State<CategoryItemsView>
   @override
   Widget build(BuildContext context) {
     final categoryName =
-        Get.arguments?['category_name'] ?? _displayName(_category ?? {});
+        AppNavigator.arguments?['category_name'] ?? _displayName(_category ?? {});
 
     return Scaffold(
       backgroundColor: context.cx.scaffold,
@@ -196,7 +197,7 @@ class _CategoryItemsViewState extends State<CategoryItemsView>
     final ratingCount = int.tryParse(vendor['rating_count']?.toString() ?? '0') ?? 0;
 
     return GestureDetector(
-      onTap: () => Get.toNamed(AppRoutes.vendorDetail,
+      onTap: () => AppNavigator.toNamed(AppRoutes.vendorDetail,
           arguments: {'vendor_id': vendor['id']}),
       child: Container(
         margin: const EdgeInsets.only(bottom: 14),
@@ -380,7 +381,7 @@ class _CategoryItemsViewState extends State<CategoryItemsView>
 
     return GestureDetector(
       onTap: () =>
-          Get.toNamed(AppRoutes.itemDetail, arguments: {'item_id': item['id']}),
+          AppNavigator.toNamed(AppRoutes.itemDetail, arguments: {'item_id': item['id']}),
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(

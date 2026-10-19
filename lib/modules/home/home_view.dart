@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:order/app/theme/theme_colors.dart';
-import 'package:get/get.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../shared/localization/app_translations.dart';
+import '../../shared/utils/app_navigator.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
@@ -12,7 +14,7 @@ import '../../shared/controllers/language_controller.dart';
 import '../../shared/services/fcm_service.dart';
 import 'home_controller.dart';
 
-class HomeView extends StatelessWidget {
+class HomeView extends ConsumerWidget {
   const HomeView({super.key});
 
   String _greetingKey() {
@@ -23,8 +25,9 @@ class HomeView extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
-    final controller = Get.put(HomeController());
+  Widget build(BuildContext context, WidgetRef ref) {
+    final controller = ref.watch(homeProvider);
+    final fcm = ref.watch(fcmProvider);
 
     return Scaffold(
       backgroundColor: context.cx.scaffold,
@@ -33,58 +36,58 @@ class HomeView extends StatelessWidget {
           color: AppColors.primaryOrange,
           onRefresh: () {
             // Reset section loading flags on pull-to-refresh
-            controller.isAdsLoading.value = true;
-            controller.isFeaturedLoading.value = true;
-            controller.isPopularLoading.value = true;
-            controller.isCategoriesLoading.value = true;
+            controller.isAdsLoading = true;
+            controller.isFeaturedLoading = true;
+            controller.isPopularLoading = true;
+            controller.isCategoriesLoading = true;
             return controller.loadHome();
           },
           child: CustomScrollView(
             slivers: [
               // Header — always instant (uses cached name)
-              SliverToBoxAdapter(child: _buildHeader(context)),
+              SliverToBoxAdapter(child: _buildHeader(context, controller, fcm)),
               // Search bar — always instant
               SliverToBoxAdapter(child: _buildSearchBar(context)),
               // Ads carousel — per-section loading
-              SliverToBoxAdapter(child: Obx(() {
-                if (controller.isAdsLoading.value) {
+              SliverToBoxAdapter(child: () {
+                if (controller.isAdsLoading) {
                   return _buildSectionShimmer(context, height: 160);
                 }
                 if (controller.advertisements.isEmpty) {
                   return const SizedBox.shrink();
                 }
                 return _buildAdsCarousel(context, controller);
-              })),
+              }()),
               // Top Categories
-              SliverToBoxAdapter(child: Obx(() {
-                if (controller.isCategoriesLoading.value) {
+              SliverToBoxAdapter(child: () {
+                if (controller.isCategoriesLoading) {
                   return _buildCategoryShimmer(context);
                 }
                 if (controller.topCategories.isEmpty) {
                   return const SizedBox.shrink();
                 }
                 return _buildTopCategories(context, controller);
-              })),
+              }()),
               // Featured vendors
-              SliverToBoxAdapter(child: Obx(() {
-                if (controller.isFeaturedLoading.value) {
+              SliverToBoxAdapter(child: () {
+                if (controller.isFeaturedLoading) {
                   return _buildVendorShimmer(context);
                 }
                 if (controller.featuredVendors.isEmpty) {
                   return const SizedBox.shrink();
                 }
                 return _buildFeaturedVendors(context, controller);
-              })),
+              }()),
               // Popular items
-              SliverToBoxAdapter(child: Obx(() {
-                if (controller.isPopularLoading.value) {
+              SliverToBoxAdapter(child: () {
+                if (controller.isPopularLoading) {
                   return _buildItemsShimmer(context);
                 }
                 if (controller.popularItems.isEmpty) {
                   return const SizedBox.shrink();
                 }
                 return _buildPopularItems(context, controller);
-              })),
+              }()),
               const SliverToBoxAdapter(child: SizedBox(height: 100)),
             ],
           ),
@@ -93,8 +96,8 @@ class HomeView extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
-    final controller = HomeController.to;
+  Widget _buildHeader(
+      BuildContext context, HomeController controller, FcmService fcm) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
       child: Row(
@@ -111,56 +114,53 @@ class HomeView extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 4),
-                Obx(() => Text(
-                      controller.userName.value,
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: context.cx.textPrimary,
-                      ),
-                    )),
+                Text(
+                  controller.userName,
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: context.cx.textPrimary,
+                  ),
+                ),
               ],
             ),
           ),
           // Notifications with unread badge
-          Obx(() {
-            final count = FcmService.to.unreadCount.value;
-            return IconButton(
-              onPressed: () => Get.toNamed(AppRoutes.notifications),
-              icon: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Icon(Icons.notifications_none_rounded,
-                      color: context.cx.iconDefault, size: 28),
-                  if (count > 0)
-                    Positioned(
-                      right: -4,
-                      top: -4,
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: const BoxDecoration(
-                          color: AppColors.error,
-                          shape: BoxShape.circle,
+          IconButton(
+            onPressed: () => AppNavigator.toNamed(AppRoutes.notifications),
+            icon: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Icon(Icons.notifications_none_rounded,
+                    color: context.cx.iconDefault, size: 28),
+                if (fcm.unreadCount > 0)
+                  Positioned(
+                    right: -4,
+                    top: -4,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: const BoxDecoration(
+                        color: AppColors.error,
+                        shape: BoxShape.circle,
+                      ),
+                      constraints: const BoxConstraints(
+                        minWidth: 18,
+                        minHeight: 18,
+                      ),
+                      child: Text(
+                        fcm.unreadCount > 99 ? '99+' : '${fcm.unreadCount}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
                         ),
-                        constraints: const BoxConstraints(
-                          minWidth: 18,
-                          minHeight: 18,
-                        ),
-                        child: Text(
-                          count > 99 ? '99+' : '$count',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
+                        textAlign: TextAlign.center,
                       ),
                     ),
-                ],
-              ),
-            );
-          }),
+                  ),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -170,7 +170,7 @@ class HomeView extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
       child: GestureDetector(
-        onTap: () => Get.toNamed(AppRoutes.search),
+        onTap: () => AppNavigator.toNamed(AppRoutes.search),
         child: Container(
           height: 52,
           decoration: BoxDecoration(
@@ -184,7 +184,8 @@ class HomeView extends StatelessWidget {
               Icon(Icons.search_rounded, color: context.cx.iconMuted),
               const SizedBox(width: 12),
               Text(
-                'Search vendors or items...'.tr,
+               
+               'Search vendors or items...'.tr,
                 style: TextStyle(
                   color: context.cx.textHint,
                   fontSize: 14,
@@ -266,7 +267,7 @@ class HomeView extends StatelessWidget {
 
     if (vendorId != null && vendorId.isNotEmpty) {
       // Navigate to vendor detail page
-      Get.toNamed(AppRoutes.vendorDetail, arguments: {'vendor_id': vendorId});
+      AppNavigator.toNamed(AppRoutes.vendorDetail, arguments: {'vendor_id': vendorId});
     } else if (targetUrl != null && targetUrl.isNotEmpty) {
       // Open external URL in browser
       launchUrl(Uri.parse(targetUrl), mode: LaunchMode.externalApplication);
@@ -297,6 +298,7 @@ class HomeView extends StatelessWidget {
     'child_care': Icons.child_care_rounded,
     'cleaning_services': Icons.cleaning_services_rounded,
   };
+  
 
   static IconData _resolveIcon(String? iconName) =>
       _iconMap[iconName] ?? Icons.category_rounded;
@@ -356,7 +358,7 @@ class HomeView extends StatelessWidget {
                 ),
               ),
               TextButton(
-                onPressed: () => Get.toNamed(AppRoutes.allCategories),
+                onPressed: () => AppNavigator.toNamed(AppRoutes.allCategories),
                 child: Text('View All'.tr,
                     style: const TextStyle(
                         color: AppColors.primaryOrange, fontSize: 13)),
@@ -375,7 +377,7 @@ class HomeView extends StatelessWidget {
               final gradColors =
                   _categoryGradients[i % _categoryGradients.length];
               return GestureDetector(
-                onTap: () => Get.toNamed(AppRoutes.categoryItems, arguments: {
+                onTap: () => AppNavigator.toNamed(AppRoutes.categoryItems, arguments: {
                   'category_id': cat['id'],
                   'category_name': _catDisplayName(cat),
                 }),
@@ -464,7 +466,7 @@ class HomeView extends StatelessWidget {
                 ),
               ),
               TextButton(
-                onPressed: () => Get.toNamed(AppRoutes.allVendors),
+                onPressed: () => AppNavigator.toNamed(AppRoutes.allVendors),
                 child: Text('View All'.tr,
                     style: const TextStyle(
                         color: AppColors.primaryOrange, fontSize: 13)),
@@ -490,7 +492,7 @@ class HomeView extends StatelessWidget {
 
   Widget _buildVendorCard(BuildContext context, dynamic v) {
     return GestureDetector(
-      onTap: () => Get.toNamed(AppRoutes.vendorDetail,
+      onTap: () => AppNavigator.toNamed(AppRoutes.vendorDetail,
           arguments: {'vendor_id': v['id']}),
       child: Container(
         width: 160,
@@ -618,7 +620,7 @@ class HomeView extends StatelessWidget {
                 ),
               ),
               TextButton(
-                onPressed: () => Get.toNamed(AppRoutes.allItems),
+                onPressed: () => AppNavigator.toNamed(AppRoutes.allItems),
                 child: Text('View All'.tr,
                     style: const TextStyle(
                         color: AppColors.primaryOrange, fontSize: 13)),
@@ -651,7 +653,7 @@ class HomeView extends StatelessWidget {
 
     return GestureDetector(
       onTap: () =>
-          Get.toNamed(AppRoutes.itemDetail, arguments: {'item_id': item['id']}),
+          AppNavigator.toNamed(AppRoutes.itemDetail, arguments: {'item_id': item['id']}),
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(

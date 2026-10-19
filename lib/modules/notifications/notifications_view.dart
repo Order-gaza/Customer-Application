@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:order/app/theme/theme_colors.dart';
-import 'package:get/get.dart';
+import '../../shared/localization/app_translations.dart';
+import '../../shared/utils/app_navigator.dart';
 import 'package:intl/intl.dart';
 import '../../app/constants/api_endpoints.dart';
 import '../../app/theme/app_colors.dart';
@@ -33,7 +34,7 @@ class _NotificationsViewState extends State<NotificationsView> {
     await ApiProvider.post(ApiEndpoints.notificationsMarkAllRead);
     _load();
     FcmService.to.resetUnreadCount();
-    Get.snackbar('Success'.tr, 'All marked as read'.tr, snackPosition: SnackPosition.BOTTOM, backgroundColor: AppColors.success.withValues(alpha: 0.9), colorText: Colors.white, margin: const EdgeInsets.all(12));
+    AppNavigator.snackbar('Success'.tr, 'All marked as read'.tr, snackPosition: SnackPosition.BOTTOM, backgroundColor: AppColors.success.withValues(alpha: 0.9), colorText: Colors.white, margin: const EdgeInsets.all(12));
   }
 
   Future<void> _delete(String id) async {

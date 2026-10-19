@@ -1,21 +1,26 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/constants/api_endpoints.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../data/providers/api_provider.dart';
 import '../../../shared/controllers/connectivity_controller.dart';
 import '../../../shared/controllers/language_controller.dart';
 import '../../../shared/services/fcm_service.dart';
+import '../../../shared/localization/app_translations.dart';
+import '../../../shared/utils/app_navigator.dart';
 
-class AuthController extends GetxController {
-  static AuthController get to => Get.find();
+class AuthController extends ChangeNotifier {
+  static AuthController? _instance;
+  static AuthController get to => _instance ??= AuthController();
 
   // Loading states
-  final RxBool isLoading = false.obs;
+  bool _isLoading = false;
+  bool get isLoading => _isLoading;
 
   // OTP resend timer
-  final RxInt resendSeconds = 0.obs;
+  int _resendSeconds = 0;
+  int get resendSeconds => _resendSeconds;
   Timer? _resendTimer;
 
   // Temp storage for auth flows
@@ -24,17 +29,24 @@ class AuthController extends GetxController {
 
   String get pendingEmail => _pendingEmail;
 
+  AuthController() {
+    _instance = this;
+  }
+
+  void _setLoading(bool val) {
+    _isLoading = val;
+    notifyListeners();
+  }
+
   /// Check if we are online; if not, show a single friendly message and return false
   bool _ensureConnected() {
     try {
-      if (!ConnectivityController.to.isConnected.value) {
-        // ConnectivityController already shows a persistent "No Internet" banner,
-        // so just stop loading – don't spam another snackbar.
-        isLoading.value = false;
+      if (!ConnectivityController.to.isConnected) {
+        _setLoading(false);
         return false;
       }
     } catch (_) {
-      // ConnectivityController not registered yet – proceed anyway
+      // proceed anyway
     }
     return true;
   }
@@ -47,12 +59,12 @@ class AuthController extends GetxController {
     }
     if (!_ensureConnected()) return;
 
-    isLoading.value = true;
+    _setLoading(true);
     final res = await ApiProvider.post(ApiEndpoints.login, body: {
       'email': email.trim(),
       'password': password,
     });
-    isLoading.value = false;
+    _setLoading(false);
 
     // Silently ignore network errors – ConnectivityController handles the UI
     if (res.isNetworkError) return;
@@ -69,10 +81,8 @@ class AuthController extends GetxController {
       );
       LanguageController.to.reloadLanguage();
       // Register FCM token after successful login
-      if (Get.isRegistered<FcmService>()) {
-        Get.find<FcmService>().refreshToken();
-      }
-      Get.offAllNamed(AppRoutes.main);
+      FcmService.to.refreshToken();
+      AppNavigator.offAllNamed(AppRoutes.main);
     } else {
       _snack(res.message ?? 'Login failed'.tr, isError: true);
     }
@@ -95,7 +105,7 @@ class AuthController extends GetxController {
     }
     if (!_ensureConnected()) return;
 
-    isLoading.value = true;
+    _setLoading(true);
     final res = await ApiProvider.post(ApiEndpoints.signup, body: {
       'name': name.trim(),
       'email': email.trim(),
@@ -103,14 +113,14 @@ class AuthController extends GetxController {
       'password': password,
       'confirm_password': confirmPassword,
     });
-    isLoading.value = false;
+    _setLoading(false);
 
     if (res.isNetworkError) return;
 
     if (res.success) {
       _pendingEmail = email.trim();
       _startResendTimer();
-      Get.toNamed(AppRoutes.verifyEmail);
+      AppNavigator.toNamed(AppRoutes.verifyEmail);
     } else {
       _snack(res.message ?? 'Registration failed'.tr, isError: true);
     }
@@ -124,18 +134,18 @@ class AuthController extends GetxController {
     }
     if (!_ensureConnected()) return;
 
-    isLoading.value = true;
+    _setLoading(true);
     final res = await ApiProvider.post(ApiEndpoints.verifyEmail, body: {
       'email': _pendingEmail,
       'otp': otp,
     });
-    isLoading.value = false;
+    _setLoading(false);
 
     if (res.isNetworkError) return;
 
     if (res.success) {
       _snack('Account created successfully'.tr);
-      Get.offAllNamed(AppRoutes.login);
+      AppNavigator.offAllNamed(AppRoutes.login);
     } else {
       _snack(res.message ?? 'Invalid code'.tr, isError: true);
     }
@@ -143,7 +153,7 @@ class AuthController extends GetxController {
 
   // ── RESEND OTP ──
   Future<void> resendOtp() async {
-    if (resendSeconds.value > 0) return;
+    if (_resendSeconds > 0) return;
     if (!_ensureConnected()) return;
 
     final res = await ApiProvider.post(ApiEndpoints.resendOtp, body: {
@@ -168,18 +178,18 @@ class AuthController extends GetxController {
     }
     if (!_ensureConnected()) return;
 
-    isLoading.value = true;
+    _setLoading(true);
     final res = await ApiProvider.post(ApiEndpoints.forgotPassword, body: {
       'email': email.trim(),
     });
-    isLoading.value = false;
+    _setLoading(false);
 
     if (res.isNetworkError) return;
 
     if (res.success) {
       _pendingEmail = email.trim();
       _startResendTimer();
-      Get.toNamed(AppRoutes.verifyResetOtp);
+      AppNavigator.toNamed(AppRoutes.verifyResetOtp);
     } else {
       _snack(res.message ?? 'Something went wrong'.tr, isError: true);
     }
@@ -193,18 +203,18 @@ class AuthController extends GetxController {
     }
     if (!_ensureConnected()) return;
 
-    isLoading.value = true;
+    _setLoading(true);
     final res = await ApiProvider.post(ApiEndpoints.verifyResetOtp, body: {
       'email': _pendingEmail,
       'otp': otp,
     });
-    isLoading.value = false;
+    _setLoading(false);
 
     if (res.isNetworkError) return;
 
     if (res.success) {
       _resetToken = res.data?['reset_token'] ?? '';
-      Get.toNamed(AppRoutes.resetPassword);
+      AppNavigator.toNamed(AppRoutes.resetPassword);
     } else {
       _snack(res.message ?? 'Invalid code'.tr, isError: true);
     }
@@ -226,20 +236,20 @@ class AuthController extends GetxController {
     }
     if (!_ensureConnected()) return;
 
-    isLoading.value = true;
+    _setLoading(true);
     final res = await ApiProvider.post(ApiEndpoints.resetPassword, body: {
       'email': _pendingEmail,
       'reset_token': _resetToken,
       'new_password': password,
       'confirm_password': confirmPassword,
     });
-    isLoading.value = false;
+    _setLoading(false);
 
     if (res.isNetworkError) return;
 
     if (res.success) {
       _snack('Password reset successfully'.tr);
-      Get.offAllNamed(AppRoutes.login);
+      AppNavigator.offAllNamed(AppRoutes.login);
     } else {
       _snack(res.message ?? 'Something went wrong'.tr, isError: true);
     }
@@ -250,26 +260,24 @@ class AuthController extends GetxController {
     // Fire-and-forget – don't block on network errors during logout
     ApiProvider.post(ApiEndpoints.logout);
     ApiProvider.clearAuth();
-    Get.offAllNamed(AppRoutes.login);
+    AppNavigator.offAllNamed(AppRoutes.login);
   }
 
   // ── TIMER ──
   void _startResendTimer() {
-    resendSeconds.value = 60;
+    _resendSeconds = 60;
+    notifyListeners();
     _resendTimer?.cancel();
     _resendTimer = Timer.periodic(const Duration(seconds: 1), (t) {
-      resendSeconds.value--;
-      if (resendSeconds.value <= 0) t.cancel();
+      _resendSeconds--;
+      notifyListeners();
+      if (_resendSeconds <= 0) t.cancel();
     });
   }
 
-  /// Show a snackbar. Closes any existing one first to prevent stacking.
+  /// Show a snackbar.
   void _snack(String message, {bool isError = false}) {
-    // Close existing snackbar to prevent stacking
-    if (Get.isSnackbarOpen) {
-      Get.closeCurrentSnackbar();
-    }
-    Get.snackbar(
+    AppNavigator.snackbar(
       isError ? 'Error'.tr : 'Success'.tr,
       message,
       snackPosition: SnackPosition.BOTTOM,
@@ -283,8 +291,11 @@ class AuthController extends GetxController {
   }
 
   @override
-  void onClose() {
+  void dispose() {
     _resendTimer?.cancel();
-    super.onClose();
+    super.dispose();
   }
 }
+
+final authProvider =
+    ChangeNotifierProvider<AuthController>((ref) => AuthController.to);

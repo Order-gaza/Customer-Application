@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'package:order/app/theme/theme_colors.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import '../../shared/localization/app_translations.dart';
+import '../../shared/utils/app_navigator.dart';
+import '../../shared/controllers/language_controller.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../app/constants/api_endpoints.dart';
 import '../../app/constants/app_constants.dart';
@@ -89,7 +91,7 @@ class _SearchViewState extends State<SearchView>
   /// Determine text direction: Arabic locale = RTL, otherwise auto-detect from input
   TextDirection _getTextDirection() {
     // If locale is Arabic, default to RTL
-    if (Get.locale?.languageCode == 'ar') return TextDirection.rtl;
+    if (LanguageController.to.isArabic) return TextDirection.rtl;
     // Auto-detect: if text starts with Arabic char, use RTL
     if (_searchC.text.isNotEmpty) {
       final firstChar = _searchC.text[0];
@@ -147,7 +149,7 @@ class _SearchViewState extends State<SearchView>
           // Back button
           IconButton(
             icon: Icon(Icons.arrow_back_rounded, color: context.cx.iconDefault),
-            onPressed: () => Get.back(),
+            onPressed: () => AppNavigator.back(),
           ),
           // Search field
           Expanded(
@@ -176,7 +178,7 @@ class _SearchViewState extends State<SearchView>
                           color: context.cx.textHint,
                           fontSize: 14,
                         ),
-                        hintTextDirection: Get.locale?.languageCode == 'ar'
+                        hintTextDirection: LanguageController.to.isArabic
                             ? TextDirection.rtl
                             : TextDirection.ltr,
                         border: InputBorder.none,
@@ -321,7 +323,7 @@ class _SearchViewState extends State<SearchView>
     final isOpen = v['is_currently_open'] == true || v['is_currently_open'] == 1 ||
         v['is_currently_open'] == '1';
     return GestureDetector(
-      onTap: () => Get.toNamed(AppRoutes.vendorDetail,
+      onTap: () => AppNavigator.toNamed(AppRoutes.vendorDetail,
           arguments: {'vendor_id': v['id']}),
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
@@ -449,7 +451,7 @@ class _SearchViewState extends State<SearchView>
         : item['base_price'].toString();
 
     return GestureDetector(
-      onTap: () => Get.toNamed(AppRoutes.itemDetail,
+      onTap: () => AppNavigator.toNamed(AppRoutes.itemDetail,
           arguments: {'item_id': item['id']}),
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
@@ -489,7 +491,7 @@ class _SearchViewState extends State<SearchView>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          (Get.locale?.languageCode == 'ar' && item['name_ar'] != null && item['name_ar'].toString().isNotEmpty)
+                          (LanguageController.to.isArabic && item['name_ar'] != null && item['name_ar'].toString().isNotEmpty)
                               ? item['name_ar']
                               : (item['name'] ?? ''),
                           style: TextStyle(

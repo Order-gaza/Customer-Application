@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:order/app/theme/theme_colors.dart';
-import 'package:get/get.dart';
+import '../../../shared/localization/app_translations.dart';
+import '../../../shared/utils/app_navigator.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../app/constants/api_endpoints.dart';
 import '../../../app/constants/app_constants.dart';
@@ -69,11 +70,12 @@ class _ProfileViewState extends State<ProfileView> {
                   const SizedBox(height: 24),
 
                   // Menu items
-                  _menuItem(Icons.person_outline, 'Edit Profile'.tr, () async { await Get.toNamed(AppRoutes.editProfile); _load(); }),
-                  _menuItem(Icons.location_on_outlined, 'My Addresses'.tr, () => Get.toNamed(AppRoutes.addresses)),
-                  _menuItem(Icons.lock_outline, 'Change Password'.tr, () => Get.toNamed(AppRoutes.changePassword)),
-                  _menuItem(Icons.notifications_none_rounded, 'Notifications'.tr, () => Get.toNamed(AppRoutes.notifications)),
-                  _menuItem(Icons.settings_outlined, 'Settings'.tr, () => Get.toNamed(AppRoutes.settings)),
+                  _menuItem(Icons.person_outline, 'Edit Profile'.tr, () async { await AppNavigator.toNamed(AppRoutes.editProfile); _load(); }),
+                  _menuItem(Icons.stars_rounded, 'My Points'.tr, () => AppNavigator.toNamed(AppRoutes.myPoints)),
+                  _menuItem(Icons.location_on_outlined, 'My Addresses'.tr, () => AppNavigator.toNamed(AppRoutes.addresses)),
+                  _menuItem(Icons.lock_outline, 'Change Password'.tr, () => AppNavigator.toNamed(AppRoutes.changePassword)),
+                  _menuItem(Icons.notifications_none_rounded, 'Notifications'.tr, () => AppNavigator.toNamed(AppRoutes.notifications)),
+                  _menuItem(Icons.settings_outlined, 'Settings'.tr, () => AppNavigator.toNamed(AppRoutes.settings)),
                   const SizedBox(height: 12),
                   _menuItem(Icons.logout_rounded, 'Logout'.tr, () => _confirmLogout(), color: AppColors.error),
                 ],
@@ -114,13 +116,13 @@ class _ProfileViewState extends State<ProfileView> {
   }
 
   void _confirmLogout() {
-    Get.dialog(AlertDialog(
+    AppNavigator.dialog(AlertDialog(
       backgroundColor: context.cx.card,
       title: Text('Logout'.tr, style: TextStyle(color: context.cx.textPrimary)),
       content: Text('Are you sure you want to logout?'.tr, style: TextStyle(color: context.cx.textSecondary)),
       actions: [
-        TextButton(onPressed: () => Get.back(), child: Text('Cancel'.tr)),
-        TextButton(onPressed: () { Get.back(); Get.put(AuthController()).logout(); }, child: Text('Logout'.tr, style: const TextStyle(color: AppColors.error))),
+        TextButton(onPressed: () => AppNavigator.back(), child: Text('Cancel'.tr)),
+        TextButton(onPressed: () { AppNavigator.back(); AuthController.to.logout(); }, child: Text('Logout'.tr, style: const TextStyle(color: AppColors.error))),
       ],
     ));
   }

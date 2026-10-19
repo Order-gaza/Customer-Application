@@ -1,32 +1,34 @@
-import 'package:get/get.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../shared/services/secure_storage_service.dart';
 import '../../app/constants/api_endpoints.dart';
 import '../../data/providers/api_provider.dart';
 
-class HomeController extends GetxController {
-  static HomeController get to => Get.find();
+class HomeController extends ChangeNotifier {
+  static HomeController? _instance;
+  static HomeController get to => _instance ??= HomeController();
 
   // Per-section loading flags — sections render as soon as their data arrives
-  final RxBool isAdsLoading = true.obs;
-  final RxBool isFeaturedLoading = true.obs;
-  final RxBool isPopularLoading = true.obs;
-  final RxBool isCategoriesLoading = true.obs;
+  bool isAdsLoading = true;
+  bool isFeaturedLoading = true;
+  bool isPopularLoading = true;
+  bool isCategoriesLoading = true;
 
-  final RxList<dynamic> advertisements = <dynamic>[].obs;
-  final RxList<dynamic> featuredVendors = <dynamic>[].obs;
-  final RxList<dynamic> popularItems = <dynamic>[].obs;
-  final RxList<dynamic> topCategories = <dynamic>[].obs;
-  final RxString userName = ''.obs;
+  List<dynamic> advertisements = [];
+  List<dynamic> featuredVendors = [];
+  List<dynamic> popularItems = [];
+  List<dynamic> topCategories = [];
+  String userName = '';
 
-  @override
-  void onInit() {
-    super.onInit();
+  HomeController() {
+    _instance = this;
     loadHome();
   }
 
   Future<void> loadHome() async {
     // Show name from cache instantly
-    userName.value = ApiProvider.storedUserName ?? '';
+    userName = ApiProvider.storedUserName ?? '';
+    notifyListeners();
 
     // Fire all in parallel — each section resolves independently
     await Future.wait([
@@ -43,9 +45,10 @@ class HomeController extends GetxController {
     if (res.success && res.data != null) {
       final name = res.data['user']?['name'] ?? res.data['name'] ?? '';
       if (name.toString().isNotEmpty) {
-        userName.value = name.toString();
+        userName = name.toString();
         // Update local storage so it's fresh everywhere
         SecureStorageService.instance.write('user_name', name.toString());
+        notifyListeners();
       }
     }
   }
@@ -54,10 +57,11 @@ class HomeController extends GetxController {
     try {
       final res = await ApiProvider.get(ApiEndpoints.homeAdvertisements);
       if (res.success && res.data != null) {
-        advertisements.value = res.data['advertisements'] ?? [];
+        advertisements = res.data['advertisements'] ?? [];
       }
     } finally {
-      isAdsLoading.value = false;
+      isAdsLoading = false;
+      notifyListeners();
     }
   }
 
@@ -66,10 +70,11 @@ class HomeController extends GetxController {
       final res = await ApiProvider.get(ApiEndpoints.homeFeaturedVendors,
           queryParams: {'limit': '6'});
       if (res.success && res.data != null) {
-        featuredVendors.value = res.data['vendors'] ?? [];
+        featuredVendors = res.data['vendors'] ?? [];
       }
     } finally {
-      isFeaturedLoading.value = false;
+      isFeaturedLoading = false;
+      notifyListeners();
     }
   }
 
@@ -78,10 +83,11 @@ class HomeController extends GetxController {
       final res = await ApiProvider.get(ApiEndpoints.homePopularItems,
           queryParams: {'limit': '8'});
       if (res.success && res.data != null) {
-        popularItems.value = res.data['items'] ?? [];
+        popularItems = res.data['items'] ?? [];
       }
     } finally {
-      isPopularLoading.value = false;
+      isPopularLoading = false;
+      notifyListeners();
     }
   }
 
@@ -90,10 +96,11 @@ class HomeController extends GetxController {
       final res = await ApiProvider.get(ApiEndpoints.homeTopCategories,
           queryParams: {'limit': '8'});
       if (res.success && res.data != null) {
-        topCategories.value = res.data['categories'] ?? [];
+        topCategories = res.data['categories'] ?? [];
       }
     } finally {
-      isCategoriesLoading.value = false;
+      isCategoriesLoading = false;
+      notifyListeners();
     }
   }
 
@@ -105,3 +112,6 @@ class HomeController extends GetxController {
     );
   }
 }
+
+final homeProvider =
+    ChangeNotifierProvider<HomeController>((ref) => HomeController.to);

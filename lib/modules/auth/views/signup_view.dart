@@ -1,24 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order/app/theme/theme_colors.dart';
-import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../app/theme/app_colors.dart';
+import '../../../shared/localization/app_translations.dart';
+import '../../../shared/utils/app_navigator.dart';
 import '../controllers/auth_controller.dart';
 
-class SignupView extends StatefulWidget {
+class SignupView extends ConsumerStatefulWidget {
   const SignupView({super.key});
 
   @override
-  State<SignupView> createState() => _SignupViewState();
+  ConsumerState<SignupView> createState() => _SignupViewState();
 }
 
-class _SignupViewState extends State<SignupView> {
+class _SignupViewState extends ConsumerState<SignupView> {
   final _nameC = TextEditingController();
   final _emailC = TextEditingController();
   final _phoneC = TextEditingController();
   final _passC = TextEditingController();
   final _confirmPassC = TextEditingController();
-  final _authC = AuthController.to;
   bool _obscure = true;
   bool _obscureConfirm = true;
   bool _agreedToTerms = false;
@@ -26,7 +27,7 @@ class _SignupViewState extends State<SignupView> {
   Future<void> _launchUrl(String url) async {
     final uri = Uri.parse(url);
     if (!await launchUrl(uri, mode: LaunchMode.inAppBrowserView)) {
-      Get.snackbar('Error'.tr, 'Could not open link'.tr);
+      AppNavigator.snackbar('Error'.tr, 'Could not open link'.tr);
     }
   }
 
@@ -42,6 +43,8 @@ class _SignupViewState extends State<SignupView> {
 
   @override
   Widget build(BuildContext context) {
+    final authC = ref.watch(authProvider);
+
     return Scaffold(
       backgroundColor: context.cx.scaffold,
       appBar: AppBar(
@@ -49,7 +52,7 @@ class _SignupViewState extends State<SignupView> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_rounded),
-          onPressed: () => Get.back(),
+          onPressed: () => AppNavigator.back(),
         ),
       ),
       body: SafeArea(
@@ -76,7 +79,7 @@ class _SignupViewState extends State<SignupView> {
               ),
               const SizedBox(height: 32),
 
-              // Name
+              // Full Name
               TextField(
                 controller: _nameC,
                 style: TextStyle(color: context.cx.textPrimary),
@@ -150,38 +153,43 @@ class _SignupViewState extends State<SignupView> {
                   ),
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 20),
 
-              // Terms and Privacy Policy
+              // Terms & Conditions Checkbox
               Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   SizedBox(
-                    width: 24,
                     height: 24,
+                    width: 24,
                     child: Checkbox(
                       value: _agreedToTerms,
                       activeColor: AppColors.primaryOrange,
-                      checkColor: Colors.white,
-                      side: BorderSide(color: context.cx.textSecondary),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(4),
+                      ),
                       onChanged: (val) {
-                        setState(() => _agreedToTerms = val ?? false);
+                        setState(() {
+                          _agreedToTerms = val ?? false;
+                        });
                       },
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
                         Text(
-                          'I have read and agree to the'.tr + ' ',
+                          '${'I have read and agree to the'.tr} ',
                           style: TextStyle(
                             color: context.cx.textSecondary,
                             fontSize: 13,
                           ),
                         ),
                         GestureDetector(
-                          onTap: () => _launchUrl('https://appforyou.store/Order/terms.html'),
+                          onTap: () => _launchUrl(
+                              'https://appforyou.store/Order/terms.html'),
                           child: Text(
                             'Terms and Services'.tr,
                             style: const TextStyle(
@@ -193,14 +201,15 @@ class _SignupViewState extends State<SignupView> {
                           ),
                         ),
                         Text(
-                          ' ' + 'and'.tr + ' ',
+                          ' ${'and'.tr} ',
                           style: TextStyle(
                             color: context.cx.textSecondary,
                             fontSize: 13,
                           ),
                         ),
                         GestureDetector(
-                          onTap: () => _launchUrl('https://appforyou.store/Order/privacy.html'),
+                          onTap: () => _launchUrl(
+                              'https://appforyou.store/Order/privacy.html'),
                           child: Text(
                             'Privacy Policy'.tr,
                             style: const TextStyle(
@@ -219,31 +228,31 @@ class _SignupViewState extends State<SignupView> {
               const SizedBox(height: 32),
 
               // Signup button
-              Obx(() => SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: (_authC.isLoading.value || !_agreedToTerms)
-                          ? null
-                          : () => _authC.signup(
-                                _nameC.text,
-                                _emailC.text,
-                                _phoneC.text,
-                                _passC.text,
-                                _confirmPassC.text,
-                              ),
-                      child: _authC.isLoading.value
-                          ? const SizedBox(
-                              width: 22,
-                              height: 22,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : Text('Create Account'.tr,
-                              style: const TextStyle(fontSize: 16)),
-                    ),
-                  )),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: (authC.isLoading || !_agreedToTerms)
+                      ? null
+                      : () => authC.signup(
+                            _nameC.text,
+                            _emailC.text,
+                            _phoneC.text,
+                            _passC.text,
+                            _confirmPassC.text,
+                          ),
+                  child: authC.isLoading
+                      ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : Text('Create Account'.tr,
+                          style: const TextStyle(fontSize: 16)),
+                ),
+              ),
               const SizedBox(height: 20),
 
               // Login link
@@ -258,7 +267,7 @@ class _SignupViewState extends State<SignupView> {
                     ),
                   ),
                   TextButton(
-                    onPressed: () => Get.back(),
+                    onPressed: () => AppNavigator.back(),
                     child: Text(
                       'Sign In'.tr,
                       style: const TextStyle(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:order/app/theme/theme_colors.dart';
-import 'package:get/get.dart';
+import '../../../shared/localization/app_translations.dart';
+import '../../../shared/utils/app_navigator.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../../app/constants/api_endpoints.dart';
@@ -134,10 +135,9 @@ class _AllVendorsViewState extends State<AllVendorsView> {
     final isOpen = v['is_currently_open'] == true || v['is_currently_open'] == 1 ||
         v['is_currently_open'] == '1';
     final openingTime = v['opening_time']?.toString();
-    final closingTime = v['closing_time']?.toString();
     return GestureDetector(
       onTap: () =>
-          Get.toNamed(AppRoutes.vendorDetail, arguments: {'vendor_id': v['id']}),
+          AppNavigator.toNamed(AppRoutes.vendorDetail, arguments: {'vendor_id': v['id']}),
       child: Opacity(
         opacity: isOpen ? 1.0 : 0.6,
         child: Container(

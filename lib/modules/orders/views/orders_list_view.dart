@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:order/app/theme/theme_colors.dart';
-import 'package:get/get.dart';
+import '../../../shared/localization/app_translations.dart';
+import '../../../shared/utils/app_navigator.dart';
 import '../../../app/constants/api_endpoints.dart';
 import '../../../app/constants/app_constants.dart';
 import '../../../app/routes/app_routes.dart';
@@ -94,7 +95,7 @@ class _OrdersListViewState extends State<OrdersListView> {
 
   Widget _orderCard(dynamic o) {
     return GestureDetector(
-      onTap: () => Get.toNamed(AppRoutes.orderDetail, arguments: {'order_id': o['id']}),
+      onTap: () => AppNavigator.toNamed(AppRoutes.orderDetail, arguments: {'order_id': o['id']}),
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(14),

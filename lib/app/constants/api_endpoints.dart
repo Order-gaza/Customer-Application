@@ -121,4 +121,8 @@ class ApiEndpoints {
       '$baseUrl/user_profile/change_password.php';
   static const String profileDeleteAccount =
       '$baseUrl/user_profile/delete_account.php';
+
+  // ── Points & Promo ──
+  static const String getPoints = '$baseUrl/user_profile/get_points.php';
+  static const String validatePromo = '$baseUrl/user_cart/validate_promo.php';
 }

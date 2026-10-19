@@ -1,18 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/theme/app_colors.dart';
 import '../../app/theme/theme_colors.dart';
 import '../../shared/controllers/language_controller.dart';
 import '../../shared/controllers/theme_controller.dart';
+import '../../shared/localization/app_translations.dart';
+import '../../shared/utils/app_navigator.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class SettingsView extends StatelessWidget {
+class SettingsView extends ConsumerWidget {
   const SettingsView({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final langC = LanguageController.to;
-    final themeC = ThemeController.to;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final langC = ref.watch(languageProvider);
+    final themeC = ref.watch(themeProvider);
 
     return Scaffold(
       backgroundColor: context.cx.scaffold,
@@ -27,22 +29,22 @@ class SettingsView extends StatelessWidget {
                   fontSize: 16,
                   fontWeight: FontWeight.bold)),
           const SizedBox(height: 12),
-          Obx(() => _themeOption(
+          _themeOption(
                 context,
                 themeC,
                 isDark: true,
                 icon: Icons.dark_mode_rounded,
                 title: 'Dark Mode'.tr,
                 subtitle: 'Dark background with orange accents'.tr,
-              )),
-          Obx(() => _themeOption(
+              ),
+          _themeOption(
                 context,
                 themeC,
                 isDark: false,
                 icon: Icons.light_mode_rounded,
                 title: 'Light Mode'.tr,
                 subtitle: 'Light background with orange accents'.tr,
-              )),
+              ),
           const SizedBox(height: 28),
 
           // ── Language ──
@@ -52,8 +54,8 @@ class SettingsView extends StatelessWidget {
                   fontSize: 16,
                   fontWeight: FontWeight.bold)),
           const SizedBox(height: 12),
-          Obx(() => _languageOption(context, langC, 'ar', 'العربية', 'Arabic'.tr)),
-          Obx(() => _languageOption(context, langC, 'en', 'English', 'English'.tr)),
+          _languageOption(context, langC, 'ar', 'العربية', 'Arabic'.tr),
+          _languageOption(context, langC, 'en', 'English', 'English'.tr),
           const SizedBox(height: 28),
 
           // ── About ──
@@ -67,16 +69,16 @@ class SettingsView extends StatelessWidget {
           _infoTile(context, Icons.article_outlined, 'Terms & Conditions'.tr, '', onTap: () async {
             final uri = Uri.parse('https://appforyou.store/Order/terms.html');
             if (!await launchUrl(uri, mode: LaunchMode.inAppBrowserView)) {
-              Get.snackbar('Error'.tr, 'Could not open link'.tr);
+              AppNavigator.snackbar('Error'.tr, 'Could not open link'.tr);
             }
           }),
           _infoTile(context, Icons.shield_outlined, 'Privacy Policy'.tr, '', onTap: () async {
             final uri = Uri.parse('https://appforyou.store/Order/privacy.html');
             if (!await launchUrl(uri, mode: LaunchMode.inAppBrowserView)) {
-              Get.snackbar('Error'.tr, 'Could not open link'.tr);
+              AppNavigator.snackbar('Error'.tr, 'Could not open link'.tr);
             }
           }),
-          _infoTile(context, Icons.person_outline, 'About Developer'.tr, '', onTap: () => Get.toNamed('/about-developer')),
+          _infoTile(context, Icons.person_outline, 'About Developer'.tr, '', onTap: () => AppNavigator.toNamed('/about-developer')),
           const SizedBox(height: 32),
           Center(
               child: Text('© 2026 Order'.tr,
@@ -169,7 +171,7 @@ class SettingsView extends StatelessWidget {
 
   Widget _languageOption(BuildContext context, LanguageController c,
       String code, String nativeName, String localName) {
-    final selected = c.currentLanguage.value == code;
+    final selected = c.currentLanguage == code;
     return GestureDetector(
       onTap: () => c.changeLanguage(code),
       child: Container(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import '../../../shared/localization/app_translations.dart';
+import '../../../shared/utils/app_navigator.dart';
 import '../../../app/constants/api_endpoints.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/theme_colors.dart';
@@ -34,8 +35,8 @@ class _AddAddressViewState extends State<AddAddressView> {
   void initState() {
     super.initState();
     // Check if editing
-    if (Get.arguments is Map<String, dynamic>) {
-      _editData = Get.arguments as Map<String, dynamic>;
+    if (AppNavigator.arguments is Map<String, dynamic>) {
+      _editData = AppNavigator.arguments as Map<String, dynamic>;
       _editId = _editData!['id'];
       _selectedCity = _editData!['city'];
       _selectedNeighborhood = _editData!['neighborhood'];
@@ -70,7 +71,7 @@ class _AddAddressViewState extends State<AddAddressView> {
 
   Future<void> _save() async {
     if (_selectedCity == null || _selectedNeighborhood == null) {
-      Get.snackbar('خطأ'.tr, 'يرجى اختيار المدينة والحي'.tr,
+      AppNavigator.snackbar('خطأ'.tr, 'يرجى اختيار المدينة والحي'.tr,
           backgroundColor: Colors.red.withValues(alpha: 0.9),
           colorText: Colors.white,
           snackPosition: SnackPosition.BOTTOM);
@@ -78,7 +79,7 @@ class _AddAddressViewState extends State<AddAddressView> {
     }
 
     if (_phoneCtrl.text.trim().isEmpty) {
-      Get.snackbar('خطأ'.tr, 'رقم الهاتف مطلوب'.tr,
+      AppNavigator.snackbar('خطأ'.tr, 'رقم الهاتف مطلوب'.tr,
           backgroundColor: Colors.red.withValues(alpha: 0.9),
           colorText: Colors.white,
           snackPosition: SnackPosition.BOTTOM);
@@ -107,8 +108,8 @@ class _AddAddressViewState extends State<AddAddressView> {
     setState(() => _isSaving = false);
 
     if (res.success) {
-      Get.back(result: true);
-      Get.snackbar(
+      AppNavigator.back(result: true);
+      AppNavigator.snackbar(
         'نجاح'.tr,
         _isEdit ? 'تم تحديث العنوان'.tr : 'تم إضافة العنوان'.tr,
         backgroundColor: Colors.green.withValues(alpha: 0.9),
@@ -116,7 +117,7 @@ class _AddAddressViewState extends State<AddAddressView> {
         snackPosition: SnackPosition.BOTTOM,
       );
     } else {
-      Get.snackbar('خطأ'.tr, res.message ?? 'فشلت العملية'.tr,
+      AppNavigator.snackbar('خطأ'.tr, res.message ?? 'فشلت العملية'.tr,
           backgroundColor: Colors.red.withValues(alpha: 0.9),
           colorText: Colors.white,
           snackPosition: SnackPosition.BOTTOM);

@@ -1,41 +1,42 @@
 import 'package:flutter/material.dart';
 import 'package:order/app/theme/theme_colors.dart';
-import 'package:get/get.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../shared/localization/app_translations.dart';
+import '../../shared/utils/app_navigator.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../app/constants/app_constants.dart';
 import '../../app/routes/app_routes.dart';
 import '../../app/theme/app_colors.dart';
 import 'cart_controller.dart';
 
-class CartView extends StatelessWidget {
+class CartView extends ConsumerWidget {
   const CartView({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final c = CartController.to;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final c = ref.watch(cartProvider);
 
     return Scaffold(
       backgroundColor: context.cx.scaffold,
       appBar: AppBar(
         title: Text('My Cart'.tr),
         actions: [
-          Obx(() => c.vendors.isNotEmpty
-              ? TextButton(
-                  onPressed: () => _confirmClearCart(context, c),
-                  child: Text('Clear Cart'.tr,
-                      style: const TextStyle(color: AppColors.error)),
-                )
-              : const SizedBox.shrink()),
+          if (c.vendors.isNotEmpty)
+            TextButton(
+              onPressed: () => _confirmClearCart(context, c),
+              child: Text('Clear Cart'.tr,
+                  style: const TextStyle(color: AppColors.error)),
+            ),
         ],
       ),
-      body: Obx(() {
-        if (c.isLoading.value) {
+      body: () {
+        if (c.isLoading) {
           return const Center(
               child: CircularProgressIndicator(color: AppColors.primaryOrange));
         }
         if (c.vendors.isEmpty) return _buildEmpty(context);
         return _buildCartContent(context, c);
-      }),
+      }(),
     );
   }
 
@@ -81,7 +82,7 @@ class CartView extends StatelessWidget {
       children: [
         // Vendor info header
         GestureDetector(
-          onTap: () => Get.toNamed(AppRoutes.vendorDetail, arguments: {'vendor_id': vendorData['id']?.toString()}),
+          onTap: () => AppNavigator.toNamed(AppRoutes.vendorDetail, arguments: {'vendor_id': vendorData['id']?.toString()}),
           child: Container(
             margin: const EdgeInsets.only(bottom: 12),
             padding: const EdgeInsets.all(12),
@@ -277,11 +278,11 @@ class CartView extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text('Subtotal'.tr, style: TextStyle(color: context.cx.textSecondary)),
-              Text('${AppConstants.currency} ${c.subtotal.value.toStringAsFixed(2)}',
+              Text('${AppConstants.currency} ${c.subtotal.toStringAsFixed(2)}',
                   style: TextStyle(color: context.cx.textPrimary, fontWeight: FontWeight.w600)),
             ],
           ),
-          if (!c.meetsMinimum.value) ...[
+          if (!c.meetsMinimum) ...[
             const SizedBox(height: 8),
             Text(
               'One or more vendors do not meet their minimum order amount'.tr,
@@ -292,8 +293,8 @@ class CartView extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: c.meetsMinimum.value
-                  ? () => Get.toNamed(AppRoutes.checkout)
+              onPressed: c.meetsMinimum
+                  ? () => AppNavigator.toNamed(AppRoutes.checkout)
                   : null,
               child: Text('Proceed to Checkout'.tr, style: const TextStyle(fontSize: 16)),
             ),
@@ -304,15 +305,15 @@ class CartView extends StatelessWidget {
   }
 
   void _confirmClearCart(BuildContext context, CartController c) {
-    Get.dialog(AlertDialog(
+    AppNavigator.dialog(AlertDialog(
       backgroundColor: context.cx.card,
       title: Text('Clear cart?'.tr, style: TextStyle(color: context.cx.textPrimary)),
       content: Text('Remove all items from your cart?'.tr,
           style: TextStyle(color: context.cx.textSecondary)),
       actions: [
-        TextButton(onPressed: () => Get.back(), child: Text('Cancel'.tr)),
+        TextButton(onPressed: () => AppNavigator.back(), child: Text('Cancel'.tr)),
         TextButton(
-          onPressed: () { Get.back(); c.clearCart(); },
+          onPressed: () { AppNavigator.back(); c.clearCart(); },
           child: Text('Clear Cart'.tr, style: const TextStyle(color: AppColors.error)),
         ),
       ],

@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'package:get/get.dart';
+import '../../shared/localization/app_translations.dart';
 import 'package:http/http.dart' as http;
 import '../../app/constants/app_constants.dart';
 import '../../shared/services/secure_storage_service.dart';

@@ -1,21 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order/app/theme/theme_colors.dart';
-import 'package:get/get.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../app/theme/app_colors.dart';
+import '../../../shared/localization/app_translations.dart';
+import '../../../shared/utils/app_navigator.dart';
 import '../controllers/auth_controller.dart';
 
-class LoginView extends StatefulWidget {
+class LoginView extends ConsumerStatefulWidget {
   const LoginView({super.key});
 
   @override
-  State<LoginView> createState() => _LoginViewState();
+  ConsumerState<LoginView> createState() => _LoginViewState();
 }
 
-class _LoginViewState extends State<LoginView> {
+class _LoginViewState extends ConsumerState<LoginView> {
   final _emailC = TextEditingController();
   final _passC = TextEditingController();
-  final _authC = Get.put(AuthController());
   bool _obscure = true;
 
   @override
@@ -27,6 +28,8 @@ class _LoginViewState extends State<LoginView> {
 
   @override
   Widget build(BuildContext context) {
+    final authC = ref.watch(authProvider);
+
     return Scaffold(
       backgroundColor: context.cx.scaffold,
       body: SafeArea(
@@ -113,7 +116,8 @@ class _LoginViewState extends State<LoginView> {
                 Align(
                   alignment: AlignmentDirectional.centerEnd,
                   child: TextButton(
-                    onPressed: () => Get.toNamed(AppRoutes.forgotPassword),
+                    onPressed: () =>
+                        AppNavigator.toNamed(AppRoutes.forgotPassword),
                     child: Text(
                       'Forgot Password?'.tr,
                       style: const TextStyle(
@@ -126,28 +130,28 @@ class _LoginViewState extends State<LoginView> {
                 const SizedBox(height: 20),
 
                 // Login button
-                Obx(() => SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: _authC.isLoading.value
-                            ? null
-                            : () => _authC.login(
-                                  _emailC.text,
-                                  _passC.text,
-                                ),
-                        child: _authC.isLoading.value
-                            ? const SizedBox(
-                                width: 22,
-                                height: 22,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : Text('Sign In'.tr,
-                                style: const TextStyle(fontSize: 16)),
-                      ),
-                    )),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: authC.isLoading
+                        ? null
+                        : () => authC.login(
+                              _emailC.text,
+                              _passC.text,
+                            ),
+                    child: authC.isLoading
+                        ? const SizedBox(
+                            width: 22,
+                            height: 22,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : Text('Sign In'.tr,
+                            style: const TextStyle(fontSize: 16)),
+                  ),
+                ),
                 const SizedBox(height: 24),
 
                 // Sign up link
@@ -162,7 +166,7 @@ class _LoginViewState extends State<LoginView> {
                       ),
                     ),
                     TextButton(
-                      onPressed: () => Get.toNamed(AppRoutes.signup),
+                      onPressed: () => AppNavigator.toNamed(AppRoutes.signup),
                       child: Text(
                         'Sign Up'.tr,
                         style: const TextStyle(

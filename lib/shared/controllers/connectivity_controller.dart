@@ -1,28 +1,32 @@
 import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/theme/app_colors.dart';
+import '../localization/app_translations.dart';
+import '../utils/app_navigator.dart';
 
-class ConnectivityController extends GetxController {
-  static ConnectivityController get to => Get.find();
+class ConnectivityController extends ChangeNotifier {
+  static ConnectivityController? _instance;
+  static ConnectivityController get to =>
+      _instance ??= ConnectivityController();
 
   final Connectivity _connectivity = Connectivity();
-  late StreamSubscription<List<ConnectivityResult>> _subscription;
-  final RxBool isConnected = true.obs;
+  StreamSubscription<List<ConnectivityResult>>? _subscription;
+  bool _isConnected = true;
+  bool get isConnected => _isConnected;
   bool _snackBarVisible = false;
 
-  @override
-  void onInit() {
-    super.onInit();
+  ConnectivityController() {
+    _instance = this;
     _checkInitialConnection();
     _subscription = _connectivity.onConnectivityChanged.listen(_onChanged);
   }
 
   @override
-  void onClose() {
-    _subscription.cancel();
-    super.onClose();
+  void dispose() {
+    _subscription?.cancel();
+    super.dispose();
   }
 
   Future<void> _checkInitialConnection() async {
@@ -34,14 +38,16 @@ class ConnectivityController extends GetxController {
     final connected = results.isNotEmpty &&
         !results.every((r) => r == ConnectivityResult.none);
 
-    if (connected && !isConnected.value) {
+    if (connected && !_isConnected) {
       // Came back online
-      isConnected.value = true;
+      _isConnected = true;
+      notifyListeners();
       _dismissSnackBar();
       _showBackOnline();
-    } else if (!connected && isConnected.value) {
+    } else if (!connected && _isConnected) {
       // Went offline
-      isConnected.value = false;
+      _isConnected = false;
+      notifyListeners();
       _showNoConnection();
     }
   }
@@ -49,7 +55,7 @@ class ConnectivityController extends GetxController {
   void _showNoConnection() {
     if (_snackBarVisible) return;
     _snackBarVisible = true;
-    Get.rawSnackbar(
+    AppNavigator.rawSnackbar(
       messageText: Row(
         children: [
           const Icon(Icons.wifi_off_rounded, color: Colors.white, size: 22),
@@ -73,22 +79,20 @@ class ConnectivityController extends GetxController {
       snackPosition: SnackPosition.TOP,
       duration: null, // persistent until connection is restored
       isDismissible: false,
-      animationDuration: const Duration(milliseconds: 400),
-      snackStyle: SnackStyle.FLOATING,
     );
   }
 
   void _dismissSnackBar() {
     if (_snackBarVisible) {
-      if (Get.isSnackbarOpen) {
-        Get.closeCurrentSnackbar();
+      if (AppNavigator.isSnackbarOpen) {
+        AppNavigator.closeCurrentSnackbar();
       }
       _snackBarVisible = false;
     }
   }
 
   void _showBackOnline() {
-    Get.rawSnackbar(
+    AppNavigator.rawSnackbar(
       messageText: Row(
         children: [
           const Icon(Icons.wifi_rounded, color: Colors.white, size: 22),
@@ -111,8 +115,10 @@ class ConnectivityController extends GetxController {
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       snackPosition: SnackPosition.TOP,
       duration: const Duration(seconds: 3),
-      animationDuration: const Duration(milliseconds: 400),
-      snackStyle: SnackStyle.FLOATING,
+      isDismissible: true,
     );
   }
 }
+
+final connectivityProvider = ChangeNotifierProvider<ConnectivityController>(
+    (ref) => ConnectivityController.to);

@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:order/app/theme/theme_colors.dart';
-import 'package:get/get.dart';
-import '../../../app/theme/app_colors.dart';
+import '../../../shared/localization/app_translations.dart';
+import '../../../shared/utils/app_navigator.dart';
 import '../controllers/auth_controller.dart';
 
-class ForgotPasswordView extends StatefulWidget {
+class ForgotPasswordView extends ConsumerStatefulWidget {
   const ForgotPasswordView({super.key});
 
   @override
-  State<ForgotPasswordView> createState() => _ForgotPasswordViewState();
+  ConsumerState<ForgotPasswordView> createState() => _ForgotPasswordViewState();
 }
 
-class _ForgotPasswordViewState extends State<ForgotPasswordView> {
+class _ForgotPasswordViewState extends ConsumerState<ForgotPasswordView> {
   final _emailC = TextEditingController();
-  final _authC = AuthController.to;
 
   @override
   void dispose() {
@@ -23,6 +23,8 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
 
   @override
   Widget build(BuildContext context) {
+    final authC = ref.watch(authProvider);
+
     return Scaffold(
       backgroundColor: context.cx.scaffold,
       appBar: AppBar(
@@ -30,7 +32,7 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_rounded),
-          onPressed: () => Get.back(),
+          onPressed: () => AppNavigator.back(),
         ),
       ),
       body: SafeArea(
@@ -69,23 +71,25 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
               ),
               const SizedBox(height: 32),
 
-              Obx(() => SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: _authC.isLoading.value
-                          ? null
-                          : () => _authC.forgotPassword(_emailC.text),
-                      child: _authC.isLoading.value
-                          ? const SizedBox(
-                              width: 22,
-                              height: 22,
-                              child: CircularProgressIndicator(
-                                  strokeWidth: 2, color: Colors.white),
-                            )
-                          : Text('Send Reset Code'.tr,
-                              style: const TextStyle(fontSize: 16)),
-                    ),
-                  )),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: authC.isLoading
+                      ? null
+                      : () => authC.forgotPassword(_emailC.text),
+                  child: authC.isLoading
+                      ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : Text('Send Reset Code'.tr,
+                          style: const TextStyle(fontSize: 16)),
+                ),
+              ),
             ],
           ),
         ),

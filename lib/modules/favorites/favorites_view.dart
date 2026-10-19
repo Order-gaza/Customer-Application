@@ -1,17 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:order/app/theme/theme_colors.dart';
-import 'package:get/get.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../shared/localization/app_translations.dart';
+import '../../shared/utils/app_navigator.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../app/constants/app_constants.dart';
 import '../../app/routes/app_routes.dart';
 import '../../app/theme/app_colors.dart';
 import 'favorites_controller.dart';
 
-class FavoritesView extends StatelessWidget {
+class FavoritesView extends ConsumerWidget {
   const FavoritesView({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final c = ref.watch(favoritesProvider);
     return DefaultTabController(
       length: 2,
       child: Scaffold(
@@ -44,20 +47,16 @@ class FavoritesView extends StatelessWidget {
             ],
           ),
         ),
-        body: Obx(() {
-          final c = FavoritesController.to;
-          if (c.isLoading.value && c.totalCount == 0) {
-            return const Center(
+        body: (c.isLoading && c.totalCount == 0)
+            ? const Center(
                 child: CircularProgressIndicator(
-                    color: AppColors.primaryOrange, strokeWidth: 2.5));
-          }
-          return TabBarView(
-            children: [
-              _buildVendorsTab(context, c),
-              _buildItemsTab(context, c),
-            ],
-          );
-        }),
+                    color: AppColors.primaryOrange, strokeWidth: 2.5))
+            : TabBarView(
+                children: [
+                  _buildVendorsTab(context, c),
+                  _buildItemsTab(context, c),
+                ],
+              ),
       ),
     );
   }
@@ -88,7 +87,7 @@ class FavoritesView extends StatelessWidget {
     final isOpen = v['is_currently_open'] == true || v['is_currently_open'] == 1 ||
         v['is_currently_open'] == '1';
     return GestureDetector(
-      onTap: () => Get.toNamed(AppRoutes.vendorDetail,
+      onTap: () => AppNavigator.toNamed(AppRoutes.vendorDetail,
           arguments: {'vendor_id': v['id']}),
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
@@ -192,7 +191,7 @@ class FavoritesView extends StatelessWidget {
             // Heart button
             Padding(
               padding: const EdgeInsetsDirectional.only(end: 12),
-              child: Obx(() => GestureDetector(
+              child: GestureDetector(
                     onTap: () =>
                         c.toggleFavorite('vendor', v['id'].toString()),
                     child: AnimatedSwitcher(
@@ -209,7 +208,7 @@ class FavoritesView extends StatelessWidget {
                         size: 24,
                       ),
                     ),
-                  )),
+                   ),
             ),
           ],
         ),
@@ -249,7 +248,7 @@ class FavoritesView extends StatelessWidget {
         : item['base_price'].toString();
 
     return GestureDetector(
-      onTap: () => Get.toNamed(AppRoutes.itemDetail,
+      onTap: () => AppNavigator.toNamed(AppRoutes.itemDetail,
           arguments: {'item_id': item['id']}),
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
@@ -351,7 +350,7 @@ class FavoritesView extends StatelessWidget {
                 // Heart button
                 Padding(
                   padding: const EdgeInsetsDirectional.only(end: 12),
-                  child: Obx(() => GestureDetector(
+                  child: GestureDetector(
                         onTap: () => c.toggleFavorite(
                             'item', item['id'].toString()),
                         child: AnimatedSwitcher(
@@ -369,7 +368,7 @@ class FavoritesView extends StatelessWidget {
                             size: 24,
                           ),
                         ),
-                      )),
+                      ),
                 ),
               ],
             ),

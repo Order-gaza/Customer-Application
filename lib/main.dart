@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'firebase_options.dart';
 import 'app/routes/app_pages.dart';
 import 'app/routes/app_routes.dart';
 import 'app/theme/app_theme.dart';
-import 'shared/localization/app_translations.dart';
 import 'shared/controllers/language_controller.dart';
 import 'shared/controllers/theme_controller.dart';
 import 'shared/controllers/connectivity_controller.dart';
 import 'shared/services/fcm_service.dart';
 import 'shared/services/secure_storage_service.dart';
+import 'shared/utils/app_navigator.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,51 +20,47 @@ void main() async {
   await SecureStorageService.instance.init();
 
   // Initialize Firebase
-  await Firebase.initializeApp();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 
-  Get.put(LanguageController());
-  Get.put(ThemeController());
-  Get.put(ConnectivityController(), permanent: true);
+  // Initialize singletons
+  LanguageController.to;
+  ThemeController.to;
+  ConnectivityController.to;
 
   // Initialize FCM service
-  final fcmService = FcmService();
-  Get.put(fcmService, permanent: true);
+  final fcmService = FcmService.to;
   await fcmService.init();
 
-  runApp(const OrderApp());
+  runApp(const ProviderScope(child: OrderApp()));
 }
 
-class OrderApp extends StatelessWidget {
+class OrderApp extends ConsumerWidget {
   const OrderApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final languageController = LanguageController.to;
-    final themeController = ThemeController.to;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final language = ref.watch(languageProvider);
+    final theme = ref.watch(themeProvider);
 
-    return Obx(() => GetMaterialApp(
+    return MaterialApp(
       title: 'Order',
       debugShowCheckedModeBanner: false,
+      navigatorKey: AppNavigator.navigatorKey,
+      scaffoldMessengerKey: AppNavigator.messengerKey,
 
       // Localization
-      translations: AppTranslations(),
-      locale: Locale(languageController.currentLanguage.value),
-      fallbackLocale: const Locale('ar'),
+      locale: Locale(language.currentLanguage),
 
       // Theme — reactive
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
-      themeMode: themeController.themeMode.value,
+      themeMode: theme.themeMode,
 
       // Routes
       initialRoute: AppRoutes.splash,
-      getPages: AppPages.pages,
-
-      // Default transition
-      defaultTransition: Transition.cupertino,
-      transitionDuration: const Duration(milliseconds: 250),
-    ));
+      routes: AppPages.routes,
+      onGenerateRoute: AppPages.onGenerateRoute,
+    );
   }
 }
-

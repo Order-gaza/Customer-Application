@@ -13,7 +13,7 @@ The Customer Application is a cross-platform mobile client built with Flutter, p
 
 ## Technology Stack
 * **Framework:** Flutter / Dart
-* **State Management:** GetX
+* **State Management:** Riverpod
 * **Storage:** GetStorage, SharedPreferences, Flutter Secure Storage
 * **Network Integration:** `http` package for robust API communication
 * **Target Platforms:** Android, iOS
